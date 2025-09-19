@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Cho phép app truy cập Internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Movieticketbookingapp"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+        <activity
+            android:name=".Activeties.AdminMainActivity" />
+        <activity
+            android:name=".Activeties.QuanLyPhimActivity" />
+        <activity
+            android:name=".Activeties.QuanLyPhimDetailActivity" />
+<!--        <activity-->
+<!--            android:name=".Activeties.QuanLyBacThanhVienActivity" />-->
+<!--        <activity-->
+<!--            android:name=".Activeties.QuanLyBacThanhVienDetailActivity" />-->
+        <activity
+            android:name=".Activeties.QuanLyPhongActivity" />
+        <activity
+        android:name=".Activeties.QuanLyPhongDetailActivity" />
+        <activity
+            android:name=".Activeties.QuanLyRapActivity" />
+        <activity
+            android:name=".Activeties.QuanLyRapDetailActivity" />
+<!--        <activity-->
+<!--            android:name=".Activeties.QuanLySuatActivity" />-->
+<!--        <activity-->
+<!--            android:name=".Activeties.QuanLySuatDetailActivity" />-->
+        <activity
+            android:name=".Activeties.SearchActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.TicketReceiptActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.SeatPickerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.ShowtimeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.CinemaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.MovieDetailActivity"
+            android:exported="false" /> <!-- Bật tạm nếu backend dùng HTTP (không HTTPS) -->
+        <activity
+            android:name=".Activeties.VeCuaToi"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.ListMovieActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.PhimDaXem"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.ChangePassword"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.ForgotPassword"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.PaymentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.WebPayActivity"
+            android:exported="true"
+            android:label="Thanh toán"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="myapp"
+                    android:host="zp-callback"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".Activeties.LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

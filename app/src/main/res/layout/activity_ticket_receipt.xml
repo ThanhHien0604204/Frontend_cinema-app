@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".Activeties.TicketReceiptActivity">
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
+
+        <TextView android:text="Mã đặt chỗ" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvCode" android:textStyle="bold"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="18sp" android:paddingBottom="8dp"/>
+
+        <TextView android:text="Trạng thái" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvStatus"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingBottom="8dp"/>
+
+        <TextView android:text="Số tiền" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvAmount"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingBottom="8dp"/>
+
+        <TextView android:text="Ghế" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvSeats"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingBottom="8dp"/>
+
+        <TextView android:text="Suất chiếu" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvShowtime"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingBottom="8dp"/>
+
+        <TextView android:text="Cổng thanh toán" style="@style/TextAppearance.AppCompat.Medium"/>
+        <TextView android:id="@+id/tvGateway"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingBottom="8dp"/>
+
+    </LinearLayout>
+</ScrollView>

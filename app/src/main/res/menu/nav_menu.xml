@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@drawable/ic_phim_da_xem"
+            android:title="@string/phim_da_xem" />
+
+        <item
+            android:id="@+id/nav_changeTT"
+            android:icon="@drawable/ic_thong_tin_thanh_vien"
+            android:title="@string/thong_tin_thanh_vien"/>
+
+        <item
+            android:id="@+id/nav_point"
+            android:icon="@drawable/ic_chinh_sach_tich_diem"
+            android:title="@string/chinh_sach_tich_diem"/>
+    </group>
+    <item
+        android:title="">
+        <menu>
+            <item
+                android:id="@+id/nav_login"
+                android:icon="@drawable/ic_login"
+                android:title="Đăng nhập" />
+            <item
+                android:id="@+id/nav_change"
+                android:icon="@drawable/lock"
+                android:title="Đổi mật khẩu"/>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@drawable/outline_logout"
+                android:title="Đăng xuất"/>
+        </menu>
+    </item>
+
+</menu>

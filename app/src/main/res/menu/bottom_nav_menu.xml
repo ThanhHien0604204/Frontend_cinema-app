@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:backgroundTint="@color/purple_black">
+    <item
+        android:id="@+id/nav_movie"
+        android:icon="@drawable/cinema"
+        android:title="Chọn Phim" />
+    <item
+        android:id="@+id/nav_cinema"
+        android:icon="@drawable/may_quay"
+        android:title="Chọn Rạp" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/history"
+        android:title="Lịch sử" />
+    <item
+        android:id="@+id/nav_yourTicket"
+        android:icon="@drawable/ticket"
+        android:title="Vé của tôi" />
+</menu>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="130dp"
+    android:layout_height="150dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="#800080"
+    android:layout_margin="10dp"
+    android:gravity="center"
+    app:cardCornerRadius="4dp"> <!-- Khoảng cách giữa các khung -->
+
+    <TextView
+        android:id="@+id/sessionNameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:layout_marginTop="7dp"
+        android:text="Name"
+        android:textSize="16dp"
+        android:textStyle="bold"
+
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/timeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Time - End Time"
+        android:textColor="@color/Pink" />
+
+    <TextView
+        android:id="@+id/availableSeatsTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Available Seats"
+        android:textColor="@android:color/white" />
+</LinearLayout>

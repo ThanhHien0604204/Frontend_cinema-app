@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="100dp" /><!-- bo góc-->
+    <gradient xmlns:android="http://schemas.android.com/apk/res/android"
+
+        android:angle="90"
+        android:endColor="#380B67"
+        android:startColor="#B83484"
+        android:type="linear" /><!--angle="90":chuyển màu từ trên xuống dưới-->
+</shape>

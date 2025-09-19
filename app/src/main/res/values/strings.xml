@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">movie-ticket-booking-app</string>
+    <string name="action_home"></string>
+    <string name="action_account"></string>s
+    <string name="action_ticket"></string>
+    <string name="action_history"></string>
+    <string name="search_hint">Search for movies...</string>
+    <string name="filter_button">Lọc phim</string> <!-- Thêm chuỗi mô tả -->
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="search_movie">Search movie</string>
+    <string name="phim_moi">Phim mới</string>
+    <string name="phim_sap_chieu">Phim sắp chiếu</string>
+    <string name="Ten_Dang_nhap">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="changepassword1">Mật khẩu mới</string>
+    <string name="changepassword2">Nhập lại mật khẩu</string>
+    <string name="phim_da_xem">Phim đã xem</string>
+    <string name="ve_cua_toi">Vé của tôi</string>
+    <string name="thong_tin_thanh_vien">Thay đổi thông tin thành viên</string>
+    <string name="chinh_sach_tich_diem">Chính sách tích điểm</string>
+    <string name="open_nav">Open Navigation Drawer</string>
+    <string name="close_nav">Close Navigation Drawer</string>
+    <string name="Phim_toi_xem">Phim tôi xem</string>
+    <string name="Nhan_Xet">Nhận xét của tôi</string>
+    <string name="user_role_user">User</string>
+    <string name="user_role_admin">Admin</string>
+    <string name="role_prompt">Chọn vai trò:</string>
+    <string-array name="user_roles">
+        <item>@string/user_role_user</item>
+        <item>@string/user_role_admin</item>
+    </string-array>
+</resources>

@@ -1,0 +1,15 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nền trắng của layout -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#B692F6"/>
+        </shape>
+    </item>
+
+    <!-- Viền dưới màu đen -->
+    <item android:bottom="5dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF"/>
+        </shape>
+    </item>
+</layer-list>
