@@ -45,7 +45,7 @@ public class SeatAdapter extends RecyclerView.Adapter<SeatAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH h, int i) {
         SeatResponse s = data.get(i);
-        h.tv.setText(s.seat);
+        h.tv.setText(s.seat);   // Hiển thị mã ghế
 
         boolean isSelected = selected.contains(s.seat);
         boolean isFree = "FREE".equalsIgnoreCase(s.state);

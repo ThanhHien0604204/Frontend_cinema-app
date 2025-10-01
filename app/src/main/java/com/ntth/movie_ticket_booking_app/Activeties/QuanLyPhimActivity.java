@@ -39,6 +39,7 @@ public class QuanLyPhimActivity extends AppCompatActivity {
     private Handler handler; // Để tạo độ trễ khi tìm kiếm
     private Runnable searchRunnable;
     private ApiService apiService;
+    private static final int REQUEST_CODE_DETAIL = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +50,7 @@ public class QuanLyPhimActivity extends AppCompatActivity {
         ImageView imAdd = findViewById(R.id.imAdd);
         imAdd.setOnClickListener(v -> {
             Intent intent = new Intent(QuanLyPhimActivity.this, QuanLyPhimDetailActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
         });
 
         // Nút quay lại
@@ -98,7 +99,7 @@ public class QuanLyPhimActivity extends AppCompatActivity {
             String selectedMovieId = movieIds.get(position);
             Intent intent = new Intent(QuanLyPhimActivity.this, QuanLyPhimDetailActivity.class);
             intent.putExtra("movieId", selectedMovieId);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
         });
     }
 
@@ -158,5 +159,13 @@ public class QuanLyPhimActivity extends AppCompatActivity {
                 Toast.makeText(QuanLyPhimActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        System.out.println("onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
+        if (requestCode == REQUEST_CODE_DETAIL && resultCode == RESULT_OK) {
+            fetchMovieData();
+        }
     }
 }

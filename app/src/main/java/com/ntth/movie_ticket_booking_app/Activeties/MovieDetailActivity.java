@@ -145,7 +145,7 @@ public class MovieDetailActivity extends AppCompatActivity {
 
         if (movieId != null) {
             fetchMovieDetailsFromApi(movieId);  // Mới: Lấy từ API Retrofit
-            //checkIfUserHasWatchedMovie(movieId);
+            checkIfUserHasWatchedMovie(movieId);
         } else {
             movieTitleTextView.setText("Không tìm thấy ID phim.");
         }
@@ -168,12 +168,15 @@ public class MovieDetailActivity extends AppCompatActivity {
             }
         });
         buyTicketButton.setOnClickListener(v -> {
-            // Mở LocationActivity khi nhấn nút Booking
-            Intent intent = new Intent(MovieDetailActivity.this, CinemaActivity.class);
-            intent.putExtra("movieId", movieId); // Truyền ID của bộ phim
-            startActivity(intent);
+            if (movieId != null) {
+                Intent intent = new Intent(MovieDetailActivity.this, CinemaActivity.class);
+                intent.putExtra("movieId", movieId);
+                Log.e("PaymentActivity", "Truyền MovieID " + movieId);
+                startActivity(intent);
+            } else {
+                Toast.makeText(MovieDetailActivity.this, "Không tìm thấy movieId", Toast.LENGTH_SHORT).show();
+            }
         });
-
         // Xử lý nút back
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
             @Override
@@ -210,26 +213,70 @@ public class MovieDetailActivity extends AppCompatActivity {
                 .setPositiveButton("OK", null)
                 .show();
     }
-
+//    private void setupRateAndReviewButton(String movieId) {
+//        rateReviewButton.setOnClickListener(v -> {
+//            if (!isLoggedIn()) {
+//                showWatchedMovieRequiredMessage();
+//            } else if (!hasWatchedMovie) {
+//                Toast.makeText(this, "Bạn chưa xem phim nên chưa thể đánh giá", Toast.LENGTH_SHORT).show();
+//            } else {
+//                // Kiểm tra đã review chưa
+//                api.getMyReviewForMovie(movieId).enqueue(new Callback<ReviewResponse>() {
+//                    @Override
+//                    public void onResponse(Call<ReviewResponse> call, Response<ReviewResponse> response) {
+//                        if (response.isSuccessful() && response.body() != null) {
+//                            Toast.makeText(MovieDetailActivity.this, "Bạn đã đánh giá phim này rồi!", Toast.LENGTH_SHORT).show();
+//                        } else {
+//                            // 404 hoặc null = chưa review → mở dialog
+//                            showWatchedMovieRequiredMessage();
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Call<ReviewResponse> call, Throwable t) {
+//                        // Nếu lỗi, mặc định cho mở dialog
+//                        showWatchedMovieRequiredMessage();
+//                    }
+//                });
+//            }
+//        });
+//    }
     //kiểm tra xem người dùng đã xem phim chưa
-    private void checkIfUserHasWatchedMovie(String movieId) {
-        api.getUserTickets(movieId).enqueue(new Callback<List<Ticket>>() {
-            @Override
-            public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> response) {
-                handleApiResponse(response);
-                if (response.isSuccessful() && response.body() != null) {
-                    hasWatchedMovie = !response.body().isEmpty();
-                } else {
-                    hasWatchedMovie = false;
-                    Toast.makeText(MovieDetailActivity.this, "Lỗi kiểm tra trạng thái xem phim: " + response.code(), Toast.LENGTH_SHORT).show();
-                }
-            }
+private void checkIfUserHasWatchedMovie(String movieId) {
+    rateReviewButton.setEnabled(false);
+    rateReviewButton.setText("Đang kiểm tra...");
 
-            @Override
-            public void onFailure(Call<List<Ticket>> call, Throwable t) {
+    api.getUserTickets(movieId).enqueue(new Callback<List<Ticket>>() {
+        @Override
+        public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> response) {
+            if (response.isSuccessful() && response.body() != null) {
+                List<Ticket> tickets = response.body();
+                hasWatchedMovie = !tickets.isEmpty() &&
+                        tickets.stream().anyMatch(t -> "CONFIRMED".equals(t.getStatus()));
+            } else {
+                Log.e("WatchedCheck", "Response error: " + response.code());
                 hasWatchedMovie = false;
-                Log.e("MovieDetail", "Lỗi kiểm tra xem phim: " + t.getMessage(), t);
-                Toast.makeText(MovieDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+            updateReviewButtonState();
+        }
+
+        @Override
+        public void onFailure(Call<List<Ticket>> call, Throwable t) {
+            Log.e("WatchedCheck", "API failure: " + t.getMessage(), t);
+            hasWatchedMovie = false;
+            updateReviewButtonState();
+        }
+    });
+}
+
+    private void updateReviewButtonState() {
+        runOnUiThread(() -> {
+            if (hasWatchedMovie) {
+                rateReviewButton.setText("Đánh giá");
+                rateReviewButton.setEnabled(true);
+            } else {
+                rateReviewButton.setText("Đánh giá");//chưa xem phim
+                rateReviewButton.setEnabled(false);
             }
         });
     }

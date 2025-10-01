@@ -57,7 +57,7 @@ public class QuanLyRapDetailActivity extends AppCompatActivity {
 
         btThem.setOnClickListener(v -> addLocation());
         //btSua.setOnClickListener(v -> updateLocation());
-        //btXoa.setOnClickListener(v -> deleteLocation());
+        btXoa.setOnClickListener(v -> deleteLocation());
     }
 
     private void loadLocationDetails(String locationId) {
@@ -104,6 +104,7 @@ public class QuanLyRapDetailActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     Toast.makeText(QuanLyRapDetailActivity.this, "Thêm rạp thành công!", Toast.LENGTH_SHORT).show();
                     clearInputs();
+                    setResult(RESULT_OK);
                     finish();
                 } else {
                     Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi thêm rạp: " + response.message(), Toast.LENGTH_SHORT).show();
@@ -139,6 +140,7 @@ public class QuanLyRapDetailActivity extends AppCompatActivity {
 //            public void onResponse(Call<Cinema> call, Response<Cinema> response) {
 //                if (response.isSuccessful()) {
 //                    Toast.makeText(QuanLyRapDetailActivity.this, "Sửa rạp thành công!", Toast.LENGTH_SHORT).show();
+//                    setResult(RESULT_OK);
 //                    finish();
 //                } else {
 //                    Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi sửa rạp: " + response.message(), Toast.LENGTH_SHORT).show();
@@ -152,29 +154,30 @@ public class QuanLyRapDetailActivity extends AppCompatActivity {
 //        });
 //    }
 
-//    private void deleteLocation() {
-//        if (locationId == null) {
-//            Toast.makeText(this, "Không có rạp để xóa!", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        apiService.deleteCinema(locationId).enqueue(new Callback<Void>() {
-//            @Override
-//            public void onResponse(Call<Void> call, Response<Void> response) {
-//                if (response.isSuccessful()) {
-//                    Toast.makeText(QuanLyRapDetailActivity.this, "Xóa rạp thành công!", Toast.LENGTH_SHORT).show();
-//                    finish();
-//                } else {
-//                    Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi xóa rạp: " + response.message(), Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Void> call, Throwable t) {
-//                Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
+    private void deleteLocation() {
+        if (locationId == null) {
+            Toast.makeText(this, "Không có rạp để xóa!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        apiService.deleteCinema(locationId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(QuanLyRapDetailActivity.this, "Xóa rạp thành công!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi xóa rạp: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(QuanLyRapDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     private boolean validateInputs(String name, String address, String numberOfRoomsStr) {
         if (TextUtils.isEmpty(name)) {

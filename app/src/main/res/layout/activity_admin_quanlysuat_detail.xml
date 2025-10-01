@@ -16,9 +16,10 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="90dp"
             android:background="@android:color/holo_purple"
-            android:padding="10dp"
+            android:paddingStart="30dp"
+            android:paddingTop="40dp"
             android:text="QUẢN LÝ RẠP CHIẾU PHIM"
             android:textColor="@color/white"
             android:textSize="20dp" />
@@ -39,9 +40,9 @@
                 android:id="@+id/imBack"
                 android:layout_width="50dp"
                 android:layout_height="30dp"
+                android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp"
-                android:layout_marginTop="10dp"
-                android:layout_weight="1"
+                android:layout_marginTop="15dp"
                 app:srcCompat="@drawable/back" />
 
             <TextView
@@ -49,10 +50,12 @@
                 android:layout_width="333dp"
                 android:layout_height="50dp"
                 android:layout_marginBottom="10dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="10dp"
                 android:padding="5dp"
-                android:text="THÔNG TIN SUẤT     "
+                android:text="THÔNG TIN SUẤT CHIẾU  "
                 android:textColor="@color/white"
-                android:textSize="30dp" />
+                android:textSize="25dp" />
         </LinearLayout>
 
         <LinearLayout
@@ -65,43 +68,34 @@
             android:id="@+id/imageView4"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:layout_marginBottom="20dp"
             app:srcCompat="@drawable/suat" />
+        <Spinner
+            android:id="@+id/spPhim"
+            android:layout_width="392dp"
+            android:layout_height="50dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+         />
+
+        <Spinner
+            android:id="@+id/spRap"
+            android:layout_width="392dp"
+            android:layout_height="50dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:orientation="horizontal">
-
-            <Spinner
-                android:id="@+id/spPhim"
-                android:layout_width="392dp"
-                android:layout_height="50dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:layout_weight="1" />
 
             <Spinner
                 android:id="@+id/spPhong"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:layout_weight="1" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            android:orientation="horizontal">
-
-            <Spinner
-                android:id="@+id/spRap"
-                android:layout_width="210dp"
-                android:layout_height="50dp"
+                android:layout_width="230dp"
+                android:layout_height="40dp"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp"
                 android:layout_weight="1" />

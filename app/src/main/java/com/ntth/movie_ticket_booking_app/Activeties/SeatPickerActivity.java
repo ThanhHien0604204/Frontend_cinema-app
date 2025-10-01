@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.ntth.movie_ticket_booking_app.Adapters.SeatAdapter;
+import com.ntth.movie_ticket_booking_app.Class.GridSpacingItemDecoration;
 import com.ntth.movie_ticket_booking_app.Class.Seat;
 import com.ntth.movie_ticket_booking_app.R;
 import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
@@ -80,7 +82,7 @@ public class SeatPickerActivity extends AppCompatActivity {
         back=findViewById(R.id.back);
         back.setOnClickListener(v -> finish());
 
-        recyclerSeats.setLayoutManager(new GridLayoutManager(this, 10)); // số cột tùy phòng
+        recyclerSeats.setLayoutManager(new GridLayoutManager(this, 5)); // số cột tùy phòng
         recyclerSeats.setAdapter(adapter);
 
         btnPay.setOnClickListener(v -> gotoPayment());
@@ -121,5 +123,28 @@ public class SeatPickerActivity extends AppCompatActivity {
         i.putExtra("showtimeId", showtimeId);
         i.putStringArrayListExtra("seats", new ArrayList<>(selected));
         startActivity(i);
+    }
+    private void setupRecyclerView() {
+        // Tạo GridLayoutManager với span count linh hoạt
+        int spanCount = calculateSpanCount(); // Tính dựa trên kích thước màn hình
+        GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
+
+        // Thêm ItemDecoration để tạo khoảng cách
+        int spacing = 8; // 8dp spacing
+        RecyclerView.ItemDecoration itemDecoration =
+                new GridSpacingItemDecoration(spanCount, spacing, true);
+
+        recyclerSeats.setLayoutManager(layoutManager);
+        recyclerSeats.addItemDecoration(itemDecoration);
+        recyclerSeats.setAdapter(adapter);
+    }
+
+    // Tính số cột dựa trên màn hình
+    private int calculateSpanCount() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int width = displayMetrics.widthPixels;
+        int itemWidth = 60; // 60dp cho mỗi ghế
+        return width / (itemWidth * (int) getResources().getDisplayMetrics().density);
     }
 }

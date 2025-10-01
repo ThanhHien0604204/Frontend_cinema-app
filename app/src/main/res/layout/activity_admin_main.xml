@@ -17,10 +17,11 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="110dp"
             android:layout_marginBottom="50dp"
             android:background="@android:color/holo_purple"
-            android:padding="25dp"
+            android:paddingTop="50dp"
+            android:paddingStart="30dp"
             android:text="QUẢN LÝ RẠP CHIẾU PHIM"
             android:textColor="@color/white"
             android:textSize="20dp" />

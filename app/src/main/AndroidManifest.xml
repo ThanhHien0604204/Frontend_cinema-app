@@ -18,30 +18,34 @@
         android:theme="@style/Theme.Movieticketbookingapp"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <activity android:name=".Activeties.AdminMainActivity" />
+        <activity android:name=".Activeties.QuanLyPhimActivity" />
+        <activity android:name=".Activeties.QuanLyPhimDetailActivity" /> <!-- <activity -->
+        <!-- android:name=".Activeties.QuanLyBacThanhVienActivity" /> -->
+        <!-- <activity -->
+        <!-- android:name=".Activeties.QuanLyBacThanhVienDetailActivity" /> -->
+        <activity android:name=".Activeties.QuanLyPhongActivity" />
+        <activity android:name=".Activeties.QuanLyPhongDetailActivity" />
+        <activity android:name=".Activeties.QuanLyRapActivity" />
+        <activity android:name=".Activeties.QuanLyRapDetailActivity" /> <!-- <activity -->
+        <activity android:name=".Activeties.QuanLySuatActivity" />
+         <activity android:name=".Activeties.QuanLySuatDetailActivity" />
+        <activity android:name=".Activeties.QuanLyNguoiDungActivity" />
+        <activity android:name=".Activeties.QuanLyNguoiDungDetailActivity" />
         <activity
-            android:name=".Activeties.AdminMainActivity" />
+            android:name=".Activeties.ResetPasswordActivity"
+            android:exported="false" />
         <activity
-            android:name=".Activeties.QuanLyPhimActivity" />
+            android:name=".Activeties.BillActivity"
+            android:exported="false" />
         <activity
-            android:name=".Activeties.QuanLyPhimDetailActivity" />
-<!--        <activity-->
-<!--            android:name=".Activeties.QuanLyBacThanhVienActivity" />-->
-<!--        <activity-->
-<!--            android:name=".Activeties.QuanLyBacThanhVienDetailActivity" />-->
-        <activity
-            android:name=".Activeties.QuanLyPhongActivity" />
-        <activity
-        android:name=".Activeties.QuanLyPhongDetailActivity" />
-        <activity
-            android:name=".Activeties.QuanLyRapActivity" />
-        <activity
-            android:name=".Activeties.QuanLyRapDetailActivity" />
-<!--        <activity-->
-<!--            android:name=".Activeties.QuanLySuatActivity" />-->
-<!--        <activity-->
-<!--            android:name=".Activeties.QuanLySuatDetailActivity" />-->
+            android:name=".Activeties.ForgotPassword"
+            android:exported="false" />
         <activity
             android:name=".Activeties.SearchActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activeties.ThayDoiThongTin"
             android:exported="false" />
         <activity
             android:name=".Activeties.TicketReceiptActivity"
@@ -74,30 +78,28 @@
             android:name=".Activeties.ChangePassword"
             android:exported="false" />
         <activity
-            android:name=".Activeties.ForgotPassword"
+            android:name=".Activeties.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".Activeties.PaymentActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Activeties.MainActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Activeties.WebPayActivity"
-            android:exported="true"
-            android:label="Thanh toán"
-            android:launchMode="singleTask">
+            android:name=".Activeties.PaymentCallbackActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
-                    android:scheme="myapp"
-                    android:host="zp-callback"/>
+                    android:host="zp-callback"
+                    android:scheme="myapp" />
             </intent-filter>
         </activity>
+        <!-- Payment giữ logic polling, KHÔNG cần intent-filter -->
         <activity
-            android:name=".Activeties.LoginActivity"
+            android:name=".Activeties.PaymentActivity"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".Activeties.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

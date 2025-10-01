@@ -4,7 +4,7 @@ public class ReviewResponse {
     public String id;
     public String movieId;
     public String userId;
-    public int rating;
+    public double rating;
     public String content;
     public String reviewTime; // ISO-8601, có thể map Instant -> String
 
@@ -32,11 +32,11 @@ public class ReviewResponse {
         this.userId = userId;
     }
 
-    public int getRating() {
+    public double getRating() {
         return rating;
     }
 
-    public void setRating(int rating) {
+    public void setRating(double rating) {
         this.rating = rating;
     }
 

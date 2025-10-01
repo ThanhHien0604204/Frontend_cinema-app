@@ -3,13 +3,13 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingBottom="8dp"
+    android:layout_margin="10dp"
     android:gravity="center">
 
     <TextView
         android:id="@+id/tvSeat"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:background="@drawable/tron_mau"
         android:gravity="center"
         android:textColor="@android:color/black"

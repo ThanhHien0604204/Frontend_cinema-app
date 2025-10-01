@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import me.zhanghai.android.materialratingbar.MaterialRatingBar;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -48,12 +49,15 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
 
         holder.commentTime.setText(review.getReviewTime());
         holder.reviewContent.setText(review.getContent());
-        holder.userRating.setRating((float)review.getRating());
 
-        // Log dữ liệu để kiểm tra xem dữ liệu có được đặt đúng trong ViewHolder hay không
+        // ✅ Set rating cho MaterialRatingBar
+        holder.userRating.setStepSize(0.5f);
+        holder.userRating.setRating((float) review.getRating());
+        holder.userRating.setIsIndicator(true); // Đảm bảo không bấm được
+
         Log.d("ReviewAdapter", "Review: " + review.getContent() + ", Rating: " + review.getRating());
 
-        // Đọc dữ liệu tên người dùng
+        // Code lấy tên user giữ nguyên...
         ApiService api = RetrofitClient.getInstance().create(ApiService.class);
         api.getUserById(review.getUserId()).enqueue(new Callback<PublicUserResponse>() {
             @Override
@@ -79,18 +83,15 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
     }
 
     public static class ReviewViewHolder extends RecyclerView.ViewHolder {
-
-        TextView userName;
-        TextView commentTime;
-        TextView reviewContent;
-        RatingBar userRating;
+        TextView userName, commentTime, reviewContent;
+        RatingBar userRating; // ✅ THAY ĐỔI: RatingBar thay vì MaterialRatingBar
 
         public ReviewViewHolder(@NonNull View itemView) {
             super(itemView);
             userName = itemView.findViewById(R.id.user_name);
             commentTime = itemView.findViewById(R.id.comment_time);
             reviewContent = itemView.findViewById(R.id.review);
-            userRating = itemView.findViewById(R.id.user_rating);
+            userRating = itemView.findViewById(R.id.user_rating); // ✅ RatingBar
         }
     }
 }

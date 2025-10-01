@@ -58,9 +58,12 @@ public class ReviewDialogFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_review, null);
 
         ratingBar = view.findViewById(R.id.ratingBar);
+
         reviewEditText = view.findViewById(R.id.reviewEditText);
         cancelButton = view.findViewById(R.id.cancelButton);
         confirmButton = view.findViewById(R.id.confirmButton);
+
+        ratingBar.setStepSize(0.5f);
 
         cancelButton.setOnClickListener(v -> dismiss());
         confirmButton.setOnClickListener(v -> submitReview());
@@ -92,7 +95,7 @@ public class ReviewDialogFragment extends DialogFragment {
     }
 
     private void submitReview() {
-        float rating = ratingBar.getRating();
+        float rating = ratingBar.getRating(); // Có thể 1.5, 2.5
         String reviewText = reviewEditText.getText().toString();
 
         if (rating == 0 || reviewText.isEmpty()) {

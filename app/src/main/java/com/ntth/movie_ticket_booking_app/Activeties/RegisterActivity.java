@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -26,6 +27,10 @@ import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
 import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
 import com.ntth.movie_ticket_booking_app.dto.RegisterRequest;
 
+import java.io.IOException;
+import java.util.Map;
+
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -91,6 +96,10 @@ public class RegisterActivity extends AppCompatActivity {
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(RegisterActivity.this, "Mật khẩu phải ít nhất 6 ký tự!", Toast.LENGTH_SHORT).show();
                     return;
+                } else if (!password.equals(NhapLai)) {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(RegisterActivity.this, "Mật khẩu nhập lại không khớp!", Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
                 // Tạo request
@@ -98,28 +107,50 @@ public class RegisterActivity extends AppCompatActivity {
 
                 // Gọi API đăng ký
                 ApiService api = RetrofitClient.getInstance().create(ApiService.class);
-                api.register(request).enqueue(new Callback<String>() {
+                api.register(request).enqueue(new Callback<ResponseBody>() {  // Đổi thành ResponseBody
                     @Override
-                    public void onResponse(Call<String> call, Response<String> response) {
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                         progressBar.setVisibility(View.GONE);
+                        Log.d("RegisterActivity", "Response code: " + response.code());
+
                         if (response.isSuccessful() && response.body() != null) {
-                            // Giả định backend trả token trong header hoặc cần gọi login
-                            // TODO: Nếu backend trả token, lưu token
-                            // RetrofitClient.saveToken(response.headers().get("Authorization").replace("Bearer ", ""));
-                            Toast.makeText(RegisterActivity.this, response.body(), Toast.LENGTH_SHORT).show();
-                            // Chuyển đến LoginActivity để đăng nhập
-                            startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-                            finishAffinity();
+                            try {
+                                // Đọc response body như string thuần
+                                String message = response.body().string();
+                                Log.d("RegisterActivity", "Response message: " + message);
+                                Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                                finishAffinity();
+                            } catch (IOException e) {
+                                Log.e("RegisterActivity", "Error reading response body", e);
+                                Toast.makeText(RegisterActivity.this, "Lỗi đọc phản hồi từ server", Toast.LENGTH_SHORT).show();
+                            }
                         } else {
-                            String errorMsg = response.errorBody() != null ? response.errorBody().toString() : response.message();
-                            Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + errorMsg, Toast.LENGTH_SHORT).show();
+                            String errorMsg = "Đăng ký thất bại";
+                            try {
+                                if (response.errorBody() != null) {
+                                    errorMsg += ": " + response.errorBody().string();
+                                }
+                                if (response.code() == 400) {
+                                    errorMsg = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
+                                } else if (response.code() == 409) {
+                                    errorMsg = "Email đã tồn tại.";
+                                } else if (response.code() == 500) {
+                                    errorMsg = "Lỗi server. Vui lòng thử lại sau.";
+                                }
+                            } catch (IOException e) {
+                                Log.e("RegisterActivity", "Error reading error body", e);
+                            }
+                            Log.d("RegisterActivity", "Error message: " + errorMsg);
+                            Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<String> call, Throwable t) {
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {  // Đổi thành ResponseBody
                         progressBar.setVisibility(View.GONE);
-                        Toast.makeText(RegisterActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e("RegisterActivity", "Request failed: URL=" + call.request().url() + ", Error=" + t.getMessage(), t);
+                        Toast.makeText(RegisterActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
             }

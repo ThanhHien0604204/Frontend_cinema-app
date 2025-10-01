@@ -16,9 +16,10 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="90dp"
             android:background="@android:color/holo_purple"
-            android:padding="10dp"
+            android:paddingStart="30dp"
+            android:paddingTop="40dp"
             android:text="QUẢN LÝ RẠP CHIẾU PHIM"
             android:textColor="@color/white"
             android:textSize="20dp" />
@@ -38,7 +39,8 @@
             <ImageView
                 android:id="@+id/imBack"
                 android:layout_width="40dp"
-                android:layout_height="50dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginLeft="10dp"
                 android:layout_weight="1"
                 app:srcCompat="@drawable/back" />
@@ -47,6 +49,7 @@
                 android:id="@+id/textView3"
                 android:layout_width="301dp"
                 android:layout_height="50dp"
+                android:layout_marginTop="5dp"
                 android:layout_marginBottom="10dp"
                 android:padding="5dp"
                 android:text="PHIM"
@@ -58,6 +61,7 @@
                 android:id="@+id/imAdd"
                 android:layout_width="90dp"
                 android:layout_height="50dp"
+                android:layout_marginTop="5dp"
                 android:layout_weight="1"
                 app:srcCompat="@drawable/ic_add_admin" />
         </LinearLayout>

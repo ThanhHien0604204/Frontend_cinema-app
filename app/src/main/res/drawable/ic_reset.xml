@@ -1,0 +1,11 @@
+<!-- res/drawable/ic_reset.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@android:color/white">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,5V1L7,6l5,5L12,5zM12,15v4l-5,-5 5,-5L12,15zM21,11L19,11V7l-4,4L21,11zM4,11L6,11v4l4,-4L4,11z"/>
+</vector>

@@ -11,4 +11,17 @@
     <color name="Green1">#2C98A0</color>
     <color name="Green2">#38B2A3</color>
     <color name="Green3">#89E8AC</color>
+    <color name="prink_nhat">#FEEBE2</color>
+    <color name="star_active">#FFD54F</color>     <!-- vàng hổ phách -->
+    <color name="star_inactive">#555555</color>   <!-- xám đậm -->
+
+    <!-- Existing colors -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+
+    <!-- New colors for Reset Password -->
+    <color name="error_red">#F44336</color>
+    <color name="gray_dark">#666666</color>
+    <color name="gray_light">#999999</color>
 </resources>

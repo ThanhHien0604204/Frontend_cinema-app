@@ -30,13 +30,18 @@ import retrofit2.Response;
 public class SliderAdapters extends RecyclerView.Adapter<SliderAdapters.SliderViewHolder> {
     private List<SliderItems> sliderItems;
 
-//    private ViewPager2 viewPager2;
-//    private Context context;
+    private Context context;
+    private OnSliderItemClickListener listener;
 
-//    public SlderAdapters(ViewPager2 viewPager2, List<SliderItems> sliderItems) {
-//        this.viewPager2 = viewPager2;
-//        this.sliderItems = sliderItems;
-//    }
+    public interface OnSliderItemClickListener {
+        void onItemClick(String movieId);
+    }
+
+    public SliderAdapters(Context context, List<SliderItems> sliderItems, OnSliderItemClickListener listener) {
+        this.context = context;
+        this.sliderItems = sliderItems;
+        this.listener = listener;
+    }
 
     public SliderAdapters(List<SliderItems> sliderItems) {
         this.sliderItems = sliderItems;

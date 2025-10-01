@@ -1,15 +1,22 @@
-// QuanLyPhimDetailActivity.java (updated to use MovieRequest)
 package com.ntth.movie_ticket_booking_app.Activeties;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.ntth.movie_ticket_booking_app.Class.Genre;
 import com.ntth.movie_ticket_booking_app.Class.Movie;
 import com.ntth.movie_ticket_booking_app.R;
 import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
@@ -17,9 +24,14 @@ import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
 import com.ntth.movie_ticket_booking_app.dto.MovieRequest;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,26 +39,25 @@ import retrofit2.Response;
 
 public class QuanLyPhimDetailActivity extends AppCompatActivity {
 
-    private EditText edPhim, edThoiLuong, edKhoiChieu, edTheLoai, edAnhphim, edTrailer, edMoTa;
+    private EditText edPhim, edThoiLuong, edKhoiChieu, edAnhphim, edTrailer, edMoTa;
     private ImageView imageView;
+    private AutoCompleteTextView autoCompleteGenres;
     private Button btThemAdmin, btSuaAdmin, btXoaAdmin;
     private ApiService apiService;
     private String movieId;
+    private List<Genre> genreList = new ArrayList<>();
+    private List<String> selectedGenreIds = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_quanlyphim_detail);
 
-        // Xử lý nút quay lại
-        ImageView imBack = findViewById(R.id.imBack);
-        imBack.setOnClickListener(v -> finish());
-
         // Liên kết các View trong layout
         edPhim = findViewById(R.id.edPhim);
         edThoiLuong = findViewById(R.id.edThoiLuong);
         edKhoiChieu = findViewById(R.id.edKhoiChieu);
-        edTheLoai = findViewById(R.id.edGiaVe);  // Giả định đây là genre names, tách bằng dấu phẩy
+        autoCompleteGenres = findViewById(R.id.autoCompleteGenres);
         edAnhphim = findViewById(R.id.edAnhphim);
         edTrailer = findViewById(R.id.edTrailer);
         edMoTa = findViewById(R.id.edMoTa);
@@ -58,25 +69,117 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         // Khởi tạo Retrofit ApiService
         apiService = RetrofitClient.getInstance().create(ApiService.class);
 
-        // Lấy movieId từ Intent
-        movieId = getIntent().getStringExtra("movieId");
+        // Xử lý nút quay lại
+        ImageView imBack = findViewById(R.id.imBack);
+        imBack.setOnClickListener(v -> finish());
 
-        // Kiểm tra nếu movieId không null, truy xuất dữ liệu từ API
+        // Xử lý chọn ngày
+        edKhoiChieu.setOnClickListener(v -> showDatePickerDialog());
+
+        // Xử lý chọn thể loại
+        autoCompleteGenres.setOnClickListener(v -> showGenreSelectionDialog());
+
+        // Load danh sách thể loại
+        loadGenres();
+
+        // Lấy movieId nếu là sửa
+        movieId = getIntent().getStringExtra("movieId");
         if (movieId != null) {
+            loadMovieDetails(movieId);
             btThemAdmin.setVisibility(View.GONE);
             btSuaAdmin.setVisibility(View.VISIBLE);
             btXoaAdmin.setVisibility(View.VISIBLE);
-            loadMovieDetails(movieId);
         } else {
             btSuaAdmin.setVisibility(View.GONE);
             btXoaAdmin.setVisibility(View.GONE);
         }
 
         btThemAdmin.setOnClickListener(v -> addMovie());
-        btXoaAdmin.setOnClickListener(v -> deleteMovie());
         btSuaAdmin.setOnClickListener(v -> updateMovie());
+        btXoaAdmin.setOnClickListener(v -> deleteMovie());
     }
 
+    private void showDatePickerDialog() {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, selectedYear, selectedMonth, selectedDay) -> {
+            String selectedDate = String.format(Locale.US, "%02d-%02d-%04d", selectedDay, selectedMonth + 1, selectedYear);
+            edKhoiChieu.setText(selectedDate);
+        }, year, month, day);
+        datePickerDialog.show();
+    }
+
+    private void showGenreSelectionDialog() {
+        // Tạo ListView trong dialog
+        ListView listView = new ListView(this);
+        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        ArrayAdapter<Genre> adapter = new ArrayAdapter<Genre>(this, android.R.layout.simple_list_item_multiple_choice, genreList) {
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                android.widget.TextView textView = (android.widget.TextView) view;
+                textView.setText(genreList.get(position).getName());
+                return view;
+            }
+        };
+        listView.setAdapter(adapter);
+
+        // Đánh dấu các thể loại đã chọn
+        for (int i = 0; i < genreList.size(); i++) {
+            if (selectedGenreIds.contains(genreList.get(i).getId())) {
+                listView.setItemChecked(i, true);
+            }
+        }
+
+        // Tạo dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chọn thể loại");
+        builder.setView(listView);
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            selectedGenreIds.clear();
+            for (int i = 0; i < listView.getCount(); i++) {
+                if (listView.isItemChecked(i)) {
+                    selectedGenreIds.add(genreList.get(i).getId());
+                }
+            }
+            updateSelectedGenresText();
+        });
+        builder.setNegativeButton("Hủy", null);
+        builder.show();
+    }
+
+    private void updateSelectedGenresText() {
+        String selectedGenres = genreList.stream()
+                .filter(genre -> selectedGenreIds.contains(genre.getId()))
+                .map(Genre::getName)
+                .collect(Collectors.joining(", "));
+        autoCompleteGenres.setText(selectedGenres.isEmpty() ? "" : selectedGenres);
+    }
+    private void loadGenres() {
+        apiService.getGenres().enqueue(new Callback<List<Genre>>() {
+            @Override
+            public void onResponse(Call<List<Genre>> call, Response<List<Genre>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    genreList.clear();
+                    genreList.addAll(response.body());
+                    // Cập nhật lại khi sửa phim
+                    if (movieId != null) {
+                        loadMovieDetails(movieId);
+                    }
+                } else {
+                    Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi tải thể loại!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Genre>> call, Throwable t) {
+                Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi kết nối thể loại: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     private void loadMovieDetails(String movieId) {
         apiService.getMovieById(movieId).enqueue(new Callback<Movie>() {
             @Override
@@ -85,14 +188,19 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
                     Movie movie = response.body();
                     edPhim.setText(movie.getTitle());
                     edThoiLuong.setText(String.valueOf(movie.getDurationMinutes()));
-                    edKhoiChieu.setText(movie.getMovieDateStart().toString());  // Chuyển LocalDate sang String
-                    edTheLoai.setText(String.join(",", movie.getGenreIds()));  // Join genre IDs thành string
+                    LocalDate date = movie.getMovieDateStart();
+                    if (date != null) {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+                        edKhoiChieu.setText(date.format(formatter));
+                    }
+                    selectedGenreIds.clear();
+                    selectedGenreIds.addAll(movie.getGenreIds());
+                    updateSelectedGenresText();
                     edAnhphim.setText(movie.getImageUrl());
                     edTrailer.setText(movie.getTrailerUrl());
                     edMoTa.setText(movie.getSummary());
-                    // Nếu cần load image vào imageView, dùng Glide hoặc Picasso
                 } else {
-                    Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi tải dữ liệu phim", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi tải chi tiết phim!", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -103,99 +211,98 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         });
     }
 
+
     private void addMovie() {
         String title = edPhim.getText().toString().trim();
         String durationStr = edThoiLuong.getText().toString().trim();
-        String movieDateStartStr = edKhoiChieu.getText().toString().trim();
-        String genreStr = edTheLoai.getText().toString().trim();
+        String releaseDateStr = edKhoiChieu.getText().toString().trim();
         String imageUrl = edAnhphim.getText().toString().trim();
         String trailerUrl = edTrailer.getText().toString().trim();
         String summary = edMoTa.getText().toString().trim();
 
-        if (title.isEmpty() || durationStr.isEmpty() || movieDateStartStr.isEmpty() || genreStr.isEmpty() ||
+        if (title.isEmpty() || durationStr.isEmpty() || releaseDateStr.isEmpty() ||
                 imageUrl.isEmpty() || trailerUrl.isEmpty() || summary.isEmpty()) {
             Toast.makeText(this, "Vui lòng điền đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Integer durationMinutes;
+        if (selectedGenreIds.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn ít nhất một thể loại!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Integer duration;
         try {
-            durationMinutes = Integer.parseInt(durationStr);
+            duration = Integer.parseInt(durationStr);
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Thời lượng phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        List<String> genreNames = Arrays.asList(genreStr.split("\\s*,\\s*"));  // Tách genre names bằng dấu phẩy
+        LocalDate releaseDate;
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            releaseDate = LocalDate.parse(releaseDateStr, formatter);
+        } catch (DateTimeParseException e) {
+            Toast.makeText(this, "Định dạng ngày không hợp lệ! Vui lòng dùng dd-MM-yyyy (e.g., 23-09-2025).", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        MovieRequest newMovieRequest = new MovieRequest();
-        newMovieRequest.setTitle(title);
-        newMovieRequest.setDurationMinutes(durationMinutes);
-        newMovieRequest.setMovieDateStart(LocalDate.parse(movieDateStartStr));  // Chuyển String sang LocalDate
-        newMovieRequest.setGenre(genreNames);
-        newMovieRequest.setImageUrl(imageUrl);
-        newMovieRequest.setTrailerUrl(trailerUrl);
-        newMovieRequest.setSummary(summary);
+        MovieRequest movieRequest = new MovieRequest();
+        movieRequest.setTitle(title);
+        movieRequest.setDurationMinutes(duration);
+        movieRequest.setMovieDateStart(releaseDate);
+        movieRequest.setGenre(selectedGenreIds);
+        movieRequest.setImageUrl(imageUrl);
+        movieRequest.setTrailerUrl(trailerUrl);
+        movieRequest.setSummary(summary);
+        movieRequest.setRating(null);
+        movieRequest.setAuthor(null);
+        movieRequest.setActors(null);
+        movieRequest.setViews(null);
 
-        apiService.addMovie(newMovieRequest).enqueue(new Callback<Movie>() {
+        apiService.addMovie(movieRequest).enqueue(new Callback<Movie>() {
             @Override
             public void onResponse(Call<Movie> call, Response<Movie> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(QuanLyPhimDetailActivity.this, "Thêm phim thành công!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
                     finish();
                 } else {
-                    Toast.makeText(QuanLyPhimDetailActivity.this, "Thêm phim thất bại!", Toast.LENGTH_SHORT).show();
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                        Log.e("QuanLyPhimDetail", "Thêm thất bại: " + response.code() + ", " + errorBody);
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Thêm thất bại: " + errorBody, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Thêm thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<Movie> call, Throwable t) {
-                Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void deleteMovie() {
-        if (movieId == null) {
-            Toast.makeText(this, "Không tìm thấy phim để xóa!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        apiService.deleteMovie(movieId).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(QuanLyPhimDetailActivity.this, "Xóa phim thành công!", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    Toast.makeText(QuanLyPhimDetailActivity.this, "Xóa phim thất bại!", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("QuanLyPhimDetail", "Lỗi kết nối: " + t.getMessage());
                 Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void updateMovie() {
-        if (movieId == null) {
-            Toast.makeText(this, "Không tìm thấy phim để sửa", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         String updatedTitle = edPhim.getText().toString().trim();
         String updatedDurationStr = edThoiLuong.getText().toString().trim();
-        String updatedMovieDateStartStr = edKhoiChieu.getText().toString().trim();
-        String updatedGenreStr = edTheLoai.getText().toString().trim();
+        String updatedReleaseDateStr = edKhoiChieu.getText().toString().trim();
         String updatedImageUrl = edAnhphim.getText().toString().trim();
         String updatedTrailerUrl = edTrailer.getText().toString().trim();
         String updatedSummary = edMoTa.getText().toString().trim();
 
-        if (updatedTitle.isEmpty() || updatedDurationStr.isEmpty() || updatedMovieDateStartStr.isEmpty() || updatedGenreStr.isEmpty() ||
+        if (updatedTitle.isEmpty() || updatedDurationStr.isEmpty() || updatedReleaseDateStr.isEmpty() ||
                 updatedImageUrl.isEmpty() || updatedTrailerUrl.isEmpty() || updatedSummary.isEmpty()) {
             Toast.makeText(this, "Vui lòng điền đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (selectedGenreIds.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn ít nhất một thể loại!", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -207,16 +314,27 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
             return;
         }
 
-        List<String> updatedGenreNames = Arrays.asList(updatedGenreStr.split("\\s*,\\s*"));
+        LocalDate updatedReleaseDate;
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            updatedReleaseDate = LocalDate.parse(updatedReleaseDateStr, formatter);
+        } catch (DateTimeParseException e) {
+            Toast.makeText(this, "Định dạng ngày không hợp lệ! Vui lòng dùng dd-MM-yyyy (e.g., 23-09-2025).", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         MovieRequest updatedMovieRequest = new MovieRequest();
         updatedMovieRequest.setTitle(updatedTitle);
         updatedMovieRequest.setDurationMinutes(updatedDuration);
-        updatedMovieRequest.setMovieDateStart(LocalDate.parse(updatedMovieDateStartStr));
-        updatedMovieRequest.setGenre(updatedGenreNames);
+        updatedMovieRequest.setMovieDateStart(updatedReleaseDate);
+        updatedMovieRequest.setGenre(selectedGenreIds);
         updatedMovieRequest.setImageUrl(updatedImageUrl);
         updatedMovieRequest.setTrailerUrl(updatedTrailerUrl);
         updatedMovieRequest.setSummary(updatedSummary);
+        updatedMovieRequest.setRating(null);
+        updatedMovieRequest.setAuthor(null);
+        updatedMovieRequest.setActors(null);
+        updatedMovieRequest.setViews(null);
 
         apiService.updateMovie(movieId, updatedMovieRequest).enqueue(new Callback<Movie>() {
             @Override
@@ -225,12 +343,51 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
                     Toast.makeText(QuanLyPhimDetailActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
                     finish();
                 } else {
-                    Toast.makeText(QuanLyPhimDetailActivity.this, "Cập nhật thất bại!", Toast.LENGTH_SHORT).show();
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                        Log.e("QuanLyPhimDetail", "Cập nhật thất bại: " + response.code() + ", " + errorBody);
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Cập nhật thất bại: " + errorBody, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Cập nhật thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<Movie> call, Throwable t) {
+                Log.e("QuanLyPhimDetail", "Lỗi kết nối: " + t.getMessage());
+                Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void deleteMovie() {
+        if (movieId == null) {
+            Toast.makeText(this, "Không có phim để xóa!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        apiService.deleteMovie(movieId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(QuanLyPhimDetailActivity.this, "Xóa thành công!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                } else {
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                        Log.e("QuanLyPhimDetail", "Xóa thất bại: " + response.code() + ", " + errorBody);
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Xóa thất bại: " + errorBody, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(QuanLyPhimDetailActivity.this, "Xóa thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("QuanLyPhimDetail", "Lỗi kết nối: " + t.getMessage());
                 Toast.makeText(QuanLyPhimDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

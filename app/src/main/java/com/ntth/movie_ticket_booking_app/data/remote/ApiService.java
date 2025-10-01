@@ -23,6 +23,8 @@ import com.ntth.movie_ticket_booking_app.dto.MovieRequest;
 import com.ntth.movie_ticket_booking_app.dto.PageResponse;
 import com.ntth.movie_ticket_booking_app.dto.PublicUserResponse;
 import com.ntth.movie_ticket_booking_app.dto.RegisterRequest;
+import com.ntth.movie_ticket_booking_app.dto.ResetPasswordRequest;
+import com.ntth.movie_ticket_booking_app.dto.ResetPasswordResponse;
 import com.ntth.movie_ticket_booking_app.dto.ReviewRequest;
 import com.ntth.movie_ticket_booking_app.dto.ReviewResponse;
 import com.ntth.movie_ticket_booking_app.dto.SeatResponse;
@@ -33,6 +35,7 @@ import com.ntth.movie_ticket_booking_app.dto.ZpCreateOrderResponse;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -82,6 +85,7 @@ public interface ApiService {
             @Query("size") int size
     );
     //ADMIN
+
     @POST("/api/movies")
     Call<Movie> addMovie(@Body MovieRequest movieRequest);
 
@@ -102,13 +106,27 @@ public interface ApiService {
     Call<List<Genre>> getGenresId(@Query("ids") String genreIds); // Truyền danh sách ID dưới dạng chuỗi
 
     //User
+    @GET("/api/user/admin")
+    Call<List<User>> getAllUsers(@Query("search") String search);  // Hỗ trợ search nếu backend có
+
+    @GET("/api/user/admin/{id}")
+    Call<User> getUserByIdADMIN(@Path("id") String id);
+
+    @POST("/api/user/admin")
+    Call<User> createUser(@Body User user);
+
+    @PUT("/api/user/admin/{id}")
+    Call<User> updateUser(@Path("id") String id, @Body User user);
+
+    @DELETE("/api/user/admin/{id}")
+    Call<Void> deleteUser(@Path("id") String id);
+
     @POST("/api/login")
     Call<AuthToken> login(@Body AuthRequest request);
-        // Đăng ký tài khoản
-    @POST("/register")
-    Call<String> register(@Body RegisterRequest request);
+    @POST("/api/register")
+    Call<ResponseBody> register(@Body RegisterRequest request);
     // Quên mật khẩu
-    @POST("/forgot-password")
+    @POST("/api/forgot-password")
     Call<Void> forgotPassword(@Body ForgotPasswordRequest request);
     // Lấy thông tin người dùng hiện tại
     @GET("/api/user/me")
@@ -122,6 +140,17 @@ public interface ApiService {
     // Đổi mật khẩu (yêu cầu JWT)
     @PATCH("/api/users/me/password")
     Call<Void> changePassword(@Body ChangePasswordRequest body);
+
+    // B1: Gửi yêu cầu reset password
+    @POST("api/forgot-password")
+    Call<ResponseBody> forgotPassword(
+            @Body ForgotPasswordRequest request,
+            @Header("X-App-Base-Url") String baseUrl
+    );
+
+    // B2: Reset password với token
+    @POST("api/reset-password")
+    Call<ResetPasswordResponse> resetPassword(@Body ResetPasswordRequest request);
 
     //Rank
     @GET("/api/ranks/{id}")
@@ -137,7 +166,10 @@ public interface ApiService {
     @POST("/api/cinemas")
     Call<Cinema> addCinema(@Body Cinema cinema);
 
-    // Room
+    @DELETE("/api/cinemas/{id}")
+    Call<Void> deleteCinema(@Path("id") String id);
+
+    // Rooms
     @GET("/api/rooms")
     Call<List<Room>> getAllRooms();
 
@@ -173,7 +205,7 @@ public interface ApiService {
     Call<Void> deleteShowtime(@Path("id") String id);
 
     // GET /api/cinemas/{cinemaId}/movies/{movieId}/showtimes?date=YYYY-MM-DD
-    @GET("api/showtimes/{cinemaId}/movies/{movieId}/showtimes")
+    @GET("/api/showtimes/cinemas/{cinemaId}/movies/{movieId}/showtimes")
     Call<List<ShowtimeResponse>> getShowtimesByCinemaAndMovie(
             @Path("cinemaId") String cinemaId,
             @Path("movieId") String movieId,
@@ -219,11 +251,8 @@ public interface ApiService {
 //    Call<BookingResponse> createBooking(@Body BookingRequest req);
 
     // Ticket API (mới)
-    @GET("/api/tickets/user/me")
+    @GET("/api/bookings/user/me")
     Call<List<Ticket>> getUserTickets(@Query("movieId") String movieId);
-
-//    @GET("/api/bookings/me")
-//    Call<List<Ticket>> getUserBookings(@Query("status") String status);
 
     @GET("/api/bookings/me")
     Call<PageResponse<Ticket>> getMyTickets(
@@ -251,6 +280,15 @@ public interface ApiService {
     // === Lấy trạng thái booking ===
     @GET("/api/bookings/{id}")
     Call<BookingResponse> getBooking(@Path("id") String bookingId);
+
+    @POST("/api/bookings/{id}/confirm")
+    Call<BookingResponse> confirmBooking(@Path("id") String id, @Body Map<String, Object> body);
+
+    @POST("/api/bookings/momo")
+    Call<BookingResponse> createBookingMoMo(@Body Map<String, String> body); // {holdId}
+
+//    @POST("/api/payments/momo/create")
+//    Call<MomoCreateOrderResponse> createMomoOrder(@Body Map<String, String> body);
 
     // === Hủy vé (tùy chọn) ===
     @POST("/api/bookings/{id}/cancel")

@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 super.onPageSelected(position);
                 // Lấy URL ảnh của bộ phim hiện tại
                 String imageUrl = listMovie.get(position).getImageUrl();
-                // Cập nhật nền ứng dụng
+                // Cthônập nhật nền ứng dụng
                 updateBackgroundImage(imageUrl);
             }
         });
@@ -373,7 +373,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Xử lý các mục trong NavigationView tại đây
         int id = item.getItemId();
         if (id == R.id.nav_history) {
-            startActivity(new Intent(MainActivity.this, PhimDaXem.class));
+            startActivity(new Intent(MainActivity.this, VeCuaToi.class));
         } else if (id == R.id.nav_changeTT) {
             startActivity(new Intent(MainActivity.this, ThayDoiThongTin.class));
         } else if (id == R.id.nav_point) {
@@ -385,8 +385,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else if (id == R.id.nav_logout) {
             RetrofitClient.clearToken();
             updateNavigationMenu(); // Cập nhật menu sau khi đăng xuất
-            startActivity(new Intent(this, LoginActivity.class));
-            finish(); //không quay lại bằng nút back
+//            startActivity(new Intent(this, LoginActivity.class));
+//            finish(); //không quay lại bằng nút back
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
@@ -548,11 +548,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         // Chuyển đến AdminMainActivity nếu là ADMIN
                         Intent intent = new Intent(MainActivity.this, AdminMainActivity.class);
                         startActivity(intent);
-                    } else {
-                        Log.e(TAG, "Bạn không có quyền truy cập admin! ");
                     }
-                } else {
-                    Toast.makeText(MainActivity.this, "Lỗi tải thông tin user", Toast.LENGTH_SHORT).show();
                 }
             }
 

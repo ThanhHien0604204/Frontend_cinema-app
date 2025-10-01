@@ -7,6 +7,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,11 +16,18 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.bumptech.glide.Glide;
+import com.ntth.movie_ticket_booking_app.Class.Cinema;
+import com.ntth.movie_ticket_booking_app.Class.Movie;
+import com.ntth.movie_ticket_booking_app.Class.Room;
+import com.ntth.movie_ticket_booking_app.Class.Showtime;
+import com.ntth.movie_ticket_booking_app.Class.Ticket;
 import com.ntth.movie_ticket_booking_app.R;
 import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
 import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
 import com.ntth.movie_ticket_booking_app.dto.BookingResponse;
 import com.ntth.movie_ticket_booking_app.dto.HoldSeatsResponse;
+import com.ntth.movie_ticket_booking_app.dto.PageResponse;
 import com.ntth.movie_ticket_booking_app.dto.ZpCreateOrderResponse;
 
 import java.time.Duration;
@@ -35,25 +43,37 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import vn.zalopay.sdk.ZaloPayError;
+import vn.zalopay.sdk.ZaloPaySDK;
+import vn.zalopay.sdk.listeners.PayOrderListener;
 
 public class PaymentActivity extends AppCompatActivity {
 
-    private TextView priceTextView, tvCountdown;
-    private AppCompatButton btnPayZalo, btnPayCash;
+    private TextView priceTextView, tvCountdown, tvMovieTitle, tvCinemaName, tvsoLuong, tvRoomName;
+    private TextView tvShowtimeDate, tvShowtimeTime, tvSeatsInfo;
+    private ImageView ivMoviePoster, back;
+    private Button btnPayZalo, btnPayCash;
 
     private String showtimeId;
     private ArrayList<String> seats;
+    private Showtime showtime;
+    private Movie movie;
+    private String cinemaName;
+    private String roomName;
 
     private String holdId;
     private long amount;
     private String expiresAtIso;
-    private ImageView back;
     private String bookingId;
     private CountDownTimer holdTimer;
     private final Handler pollHandler = new Handler(Looper.getMainLooper());
     private boolean isPolling;
 
     private ApiService api;
+
+    private String savedShowtimeId;
+    private ArrayList<String> savedSeats;
+    private boolean triedAutoConfirm = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,35 +106,453 @@ public class PaymentActivity extends AppCompatActivity {
             if (s != null) seats.set(i, s.trim().toUpperCase(Locale.ROOT));
         }
 
+        savedShowtimeId = showtimeId;
+        savedSeats = seats;
+
         setButtonsEnabled(false);
+        // Load thông tin chi tiết trước khi hold ghế
+        loadShowtimeDetails();
+        // Hold ghế sau khi có thông tin showtime
         doHold(showtimeId, seats);
 
         btnPayCash.setOnClickListener(v -> payCash());
         btnPayZalo.setOnClickListener(v -> payZalo());
 
-        handleDeeplink(getIntent()); // đề phòng trường hợp app được mở trực tiếp bằng deeplink
+        //handleDeeplink(getIntent()); // đề phòng trường hợp app được mở trực tiếp bằng deeplink
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (holdTimer != null) holdTimer.cancel();
-        stopPolling();
     }
 
     private void mapViews() {
         priceTextView = findViewById(R.id.priceTextView);
         tvCountdown = findViewById(R.id.tvCountdown);
+        tvMovieTitle = findViewById(R.id.movieNameTextView);
+        tvCinemaName = findViewById(R.id.locationTextView);
+        tvsoLuong = findViewById(R.id.soluongveTextView);
+        tvShowtimeDate = findViewById(R.id.showTimeTextView);
+//        tvShowtimeTime = findViewById(R.id.tvShowtimeTime);
+        tvSeatsInfo = findViewById(R.id.tvSeatsInfo);
+        ivMoviePoster = findViewById(R.id.movieImageView);
         btnPayZalo = findViewById(R.id.btnPayZalo);
         btnPayCash = findViewById(R.id.btnPayCash);
+        back = findViewById(R.id.back1);
     }
 
     private void setButtonsEnabled(boolean enabled) {
         btnPayCash.setEnabled(enabled);
         btnPayZalo.setEnabled(enabled);
     }
+    // ================== LOAD SHOWTIME DETAILS ==================
+    private void loadShowtimeDetails() {
+        Log.d("PaymentActivity", "Fetching showtimeId: " + showtimeId);
+
+        api.getShowtimeById(showtimeId).enqueue(new Callback<Showtime>() {
+            @Override
+            public void onResponse(Call<Showtime> call, Response<Showtime> response) {
+                Log.d("PaymentActivity", "getShowtimeById response code: " + response.code());
+                if (!response.isSuccessful() || response.body() == null) {
+                    Log.e("PaymentActivity", "getShowtimeById failed: " + response.code());
+                    Toast.makeText(PaymentActivity.this, "Không lấy được thông tin suất chiếu", Toast.LENGTH_LONG).show();
+                    if (tvShowtimeDate != null) {
+                        tvShowtimeDate.setText("Suất chiếu: N/A");
+                    } else {
+                        Log.e("PaymentActivity", "tvShowtimeDate is null");
+                    }
+                    if (tvCinemaName != null) {
+                        tvCinemaName.setText("Rạp: N/A");
+                    } else {
+                        Log.e("PaymentActivity", "tvCinemaName is null");
+                    }
+                    return;
+                }
+
+                showtime = response.body();
+                Log.d("PaymentActivity", "Showtime data: startAt=" + showtime.getStartAt() +
+                        ", movieId=" + showtime.getMovieId() + ", roomId=" + showtime.getRoomId() +
+                        ", price=" + showtime.getPrice());
+
+                // Set showtime với kiểm tra null
+                String formattedStart = showtime.getFormattedStartTime();
+                String formattedEnd = showtime.getFormattedEndTime();
+                String formattedDate = showtime.getFormattedDate();
+                if (tvShowtimeDate != null) {
+                    tvShowtimeDate.setText("Suất: " + formattedStart + " - " + formattedEnd + " (" + formattedDate + ")");
+                    Log.d("PaymentActivity", "Showtime formatted: " + tvShowtimeDate.getText());
+                } else {
+                    Log.e("PaymentActivity", "tvShowtimeDate is null");
+                }
+
+                // Hiển thị số lượng vé riêng
+                updateTicketCountUI();
+
+                // Tính toán giá vé tạm thời từ showtime (trước khi hold)
+                calculateTemporaryPrice();
+
+                // Fetch movie
+                String movieId = showtime.getMovieId();
+                Log.d("PaymentActivity", "Fetching movieId: " + movieId);
+                if (movieId == null || movieId.isEmpty()) {
+                    if (tvMovieTitle != null) {
+                        tvMovieTitle.setText("Phim: N/A");
+                    } else {
+                        Log.e("PaymentActivity", "tvMovieTitle is null");
+                    }
+                    return;
+                }
+
+                api.getMovieById(movieId).enqueue(new Callback<Movie>() {
+                    @Override
+                    public void onResponse(Call<Movie> call, Response<Movie> response) {
+                        Log.d("PaymentActivity", "getMovieById response code: " + response.code());
+                        if (response.isSuccessful() && response.body() != null) {
+                            movie = response.body();
+                            Log.d("PaymentActivity", "Movie data: title=" + movie.getTitle() +
+                                    ", imageUrl=" + movie.getImageUrl());
+
+                            if (tvMovieTitle != null) {
+                                tvMovieTitle.setText(movie.getTitle());
+                                Log.d("PaymentActivity", "Set movie name: " + tvMovieTitle.getText());
+                            } else {
+                                Log.e("PaymentActivity", "tvMovieTitle is null");
+                            }
+
+                            // Load poster với kiểm tra null
+                            if (movie.getImageUrl() != null && !movie.getImageUrl().isEmpty()) {
+                                if (ivMoviePoster != null) {
+                                    Glide.with(PaymentActivity.this)
+                                            .load(movie.getImageUrl())
+                                            .placeholder(R.drawable.load)
+                                            .error(R.drawable.thongbaoloi)
+                                            .into(ivMoviePoster);
+                                    Log.d("PaymentActivity", "Loading image: " + movie.getImageUrl());
+                                } else {
+                                    Log.e("PaymentActivity", "ivMoviePoster is null");
+                                }
+                            } else {
+                                Log.w("PaymentActivity", "Movie image URL is null or empty");
+                                if (ivMoviePoster != null) {
+                                    ivMoviePoster.setImageResource(R.drawable.thongbaoloi);
+                                } else {
+                                    Log.e("PaymentActivity", "ivMoviePoster is null");
+                                }
+                            }
+                        } else {
+                            Log.e("PaymentActivity", "getMovieById failed: " + response.code());
+                            if (tvMovieTitle != null) {
+                                tvMovieTitle.setText("Phim: N/A");
+                            } else {
+                                Log.e("PaymentActivity", "tvMovieTitle is null");
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Movie> call, Throwable t) {
+                        Log.e("PaymentActivity", "getMovieById failure: " + t.getMessage());
+                        if (tvMovieTitle != null) {
+                            tvMovieTitle.setText("Phim: N/A");
+                        } else {
+                            Log.e("PaymentActivity", "tvMovieTitle is null");
+                        }
+                    }
+                });
+
+                // Fetch room
+                String roomId = showtime.getRoomId();
+                Log.d("PaymentActivity", "Fetching roomId: " + roomId);
+                if (roomId == null || roomId.isEmpty()) {
+                    if (tvCinemaName != null) {
+                        tvCinemaName.setText("Rạp: N/A");
+                    } else {
+                        Log.e("PaymentActivity", "tvCinemaName is null");
+                    }
+                    if (tvRoomName != null) {
+                        tvRoomName.setText("Phòng: N/A");
+                    } else {
+                        Log.e("PaymentActivity", "tvRoomName is null");
+                    }
+                    return;
+                }
+
+                api.getRoom(roomId).enqueue(new Callback<Room>() {
+                    @Override
+                    public void onResponse(Call<Room> call, Response<Room> response) {
+                        Log.d("PaymentActivity", "getRoom response code: " + response.code());
+                        if (!response.isSuccessful() || response.body() == null) {
+                            Log.e("PaymentActivity", "getRoom failed: " + response.code());
+                            if (tvCinemaName != null) {
+                                tvCinemaName.setText("Rạp: N/A");
+                            } else {
+                                Log.e("PaymentActivity", "tvCinemaName is null");
+                            }
+                            if (tvRoomName != null) {
+                                tvRoomName.setText("Phòng: N/A");
+                            } else {
+                                Log.e("PaymentActivity", "tvRoomName is null");
+                            }
+                            return;
+                        }
+
+                        Room room = response.body();
+                        roomName = room.getRoomName();
+                        Log.d("PaymentActivity", "Room data: name=" + roomName + ", cinemaId=" + room.getCinemaId());
+
+                        if (tvRoomName != null) {
+                            tvRoomName.setText("Phòng: " + roomName);
+                        } else {
+                            Log.e("PaymentActivity", "tvRoomName is null");
+                        }
+
+                        // Fetch cinema
+                        String cinemaId = room.getCinemaId();
+                        Log.d("PaymentActivity", "Fetching cinemaId: " + cinemaId);
+                        if (cinemaId == null || cinemaId.isEmpty()) {
+                            if (tvCinemaName != null) {
+                                tvCinemaName.setText("Rạp: N/A");
+                            } else {
+                                Log.e("PaymentActivity", "tvCinemaName is null");
+                            }
+                            return;
+                        }
+
+                        api.getCinemaId(cinemaId).enqueue(new Callback<Cinema>() {
+                            @Override
+                            public void onResponse(Call<Cinema> call, Response<Cinema> response) {
+                                Log.d("PaymentActivity", "getCinemaId response code: " + response.code());
+                                if (response.isSuccessful() && response.body() != null) {
+                                    Cinema cinema = response.body();
+                                    cinemaName = cinema.getName();
+                                    if (tvCinemaName != null) {
+                                        tvCinemaName.setText(cinemaName + " - " + roomName);
+                                        Log.d("PaymentActivity", "Cinema name: " + cinemaName);
+                                    } else {
+                                        Log.e("PaymentActivity", "tvCinemaName is null");
+                                    }
+                                } else {
+                                    Log.e("PaymentActivity", "getCinemaId failed: " + response.code());
+                                    if (tvCinemaName != null) {
+                                        tvCinemaName.setText("Rạp: N/A");
+                                    } else {
+                                        Log.e("PaymentActivity", "tvCinemaName is null");
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<Cinema> call, Throwable t) {
+                                Log.e("PaymentActivity", "getCinemaId failure: " + t.getMessage());
+                                if (tvCinemaName != null) {
+                                    tvCinemaName.setText("Rạp: N/A");
+                                } else {
+                                    Log.e("PaymentActivity", "tvCinemaName is null");
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Call<Room> call, Throwable t) {
+                        Log.e("PaymentActivity", "getRoom failure: " + t.getMessage());
+                        if (tvCinemaName != null) {
+                            tvCinemaName.setText("Rạp: N/A");
+                        } else {
+                            Log.e("PaymentActivity", "tvCinemaName is null");
+                        }
+                        if (tvRoomName != null) {
+                            tvRoomName.setText("Phòng: N/A");
+                        } else {
+                            Log.e("PaymentActivity", "tvRoomName is null");
+                        }
+                    }
+                });
+
+                // Update seats info (chỉ hiển thị danh sách ghế, không có số lượng)
+                if (tvSeatsInfo != null && seats != null && !seats.isEmpty()) {
+                    tvSeatsInfo.setText("Ghế: " + String.join(", ", seats));
+                    Log.d("PaymentActivity", "Seats info: " + tvSeatsInfo.getText());
+                } else {
+                    Log.e("PaymentActivity", "tvSeatsInfo is null or seats is empty");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Showtime> call, Throwable t) {
+                Log.e("PaymentActivity", "getShowtimeById failure: " + t.getMessage());
+                Toast.makeText(PaymentActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                if (tvShowtimeDate != null) {
+                    tvShowtimeDate.setText("Suất chiếu: N/A");
+                } else {
+                    Log.e("PaymentActivity", "tvShowtimeDate is null");
+                }
+                if (tvCinemaName != null) {
+                    tvCinemaName.setText("Rạp: N/A");
+                } else {
+                    Log.e("PaymentActivity", "tvCinemaName is null");
+                }
+                // Vẫn cập nhật số lượng vé ngay cả khi load showtime fail
+                updateTicketCountUI();
+            }
+        });
+    }
+    // Thêm method này để hiển thị số lượng vé riêng
+    private void updateTicketCountUI() {
+        if (seats == null || seats.isEmpty()) {
+            Log.w("PaymentActivity", "Cannot update ticket count: seats is null or empty");
+            if (tvsoLuong != null) {
+                tvsoLuong.setText("Số lượng vé: 0");
+            }
+            return;
+        }
+
+        int ticketCount = seats.size();
+
+        if (tvsoLuong != null) {
+            String ticketText = String.format(Locale.getDefault(), "Số lượng vé: %d", ticketCount);
+            tvsoLuong.setText(ticketText);
+            Log.d("PaymentActivity", "Ticket count: " + ticketText);
+        } else {
+            Log.e("PaymentActivity", "soluongveTextView is null");
+        }
+    }
+    // Cập nhật method tính giá tạm thời
+    private void calculateTemporaryPrice() {
+        if (showtime == null || showtime.getPrice() == null || seats == null) {
+            Log.w("PaymentActivity", "Cannot calculate temporary price: missing data");
+            return;
+        }
+
+        int ticketCount = seats.size();
+        long tempAmount = (long) showtime.getPrice() * ticketCount;
+
+        // Update price UI (không hiển thị số lượng vé ở đây nữa)
+        if (priceTextView != null) {
+            String priceText = String.format(Locale.getDefault(),
+                    "Tạm tính: %s VNĐ",
+                    formatCurrency(tempAmount)
+            );
+            priceTextView.setText(priceText);
+            Log.d("PaymentActivity", "Temporary price: " + priceText);
+        } else {
+            Log.e("PaymentActivity", "priceTextView is null");
+        }
+    }
+
+    // Cập nhật method cập nhật giá chính thức
+    private void updateFinalPriceUI() {
+        int ticketCount = seats != null ? seats.size() : 0;
+
+        // Tính giá mỗi vé từ total amount
+        long pricePerTicket = ticketCount > 0 ? amount / ticketCount : amount;
+
+        if (priceTextView != null) {
+            String priceText = String.format(Locale.getDefault(),
+                    "%d vé x %s VNĐ = %s VNĐ",
+                    ticketCount,
+                    formatCurrency(pricePerTicket),
+                    formatCurrency(amount)
+            );
+            priceTextView.setText(priceText);
+            Log.d("PaymentActivity", "Final price: " + priceText);
+        } else {
+            Log.e("PaymentActivity", "priceTextView is null");
+        }
+
+        // Update seats info với số lượng vé
+        if (tvSeatsInfo != null && seats != null && !seats.isEmpty()) {
+            String seatsText = "Ghế: " + String.join(", ", seats) +
+                    " (" + ticketCount + " vé)";
+            tvSeatsInfo.setText(seatsText);
+            Log.d("PaymentActivity", "Seats info: " + seatsText);
+        }
+    }
+
+    // Thêm method format tiền tệ
+    private String formatCurrency(long amount) {
+        return String.format(Locale.getDefault(), "%,d", amount).replace(",", ".");
+    }
+
+    // Cập nhật method startHoldTimer
+    private void startHoldTimer(String expiresAtIso) {
+        try {
+            Instant expiresAt = Instant.parse(expiresAtIso);
+            long millisLeft = Duration.between(Instant.now(), expiresAt).toMillis();
+            if (millisLeft <= 0) {
+                showError("Giữ ghế đã hết hạn");
+                finish();
+                return;
+            }
+
+            holdTimer = new CountDownTimer(millisLeft, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    long seconds = millisUntilFinished / 1000;
+                    long minutes = seconds / 60;
+                    seconds %= 60;
+                    if (tvCountdown != null) {
+                        tvCountdown.setText(String.format(Locale.ROOT,
+                                "Thời gian giữ ghế còn lại: %02d:%02d", minutes, seconds));
+                    }
+                }
+
+                @Override
+                public void onFinish() {
+                    showError("Giữ ghế đã hết hạn");
+                    setButtonsEnabled(false);
+                    finish();
+                }
+            }.start();
+
+            Log.d("PaymentActivity", "Hold timer started: " + millisLeft + "ms remaining");
+        } catch (Exception e) {
+            Log.e("PaymentActivity", "Error parsing expiresAtIso: " + expiresAtIso, e);
+            showError("Lỗi định dạng thời gian");
+        }
+    }
+    private void updateMovieUI() {
+        if (movie != null && tvMovieTitle != null && ivMoviePoster != null) {
+            tvMovieTitle.setText(movie.getTitle());
+
+            // Load poster với Glide
+            if (movie.getImageUrl() != null && !movie.getImageUrl().isEmpty()) {
+                Glide.with(this)
+                        .load(movie.getImageUrl())
+                        .placeholder(R.drawable.load)
+                        .error(R.drawable.thongbaoloi)
+                        .into(ivMoviePoster);
+            }
+        }
+    }
+
+    private void updateLocationUI() {
+        if (tvCinemaName != null && tvRoomName != null) {
+            String cinemaText = cinemaName != null ? cinemaName : "Đang tải...";
+            String roomText = roomName != null ? "Phòng " + roomName : "Phòng chiếu";
+
+            tvCinemaName.setText(cinemaText);
+            tvRoomName.setText(roomText);
+        }
+    }
+
+    private void updateShowtimeUI() {
+        if (showtime != null && tvShowtimeDate != null && tvShowtimeTime != null) {
+            tvShowtimeDate.setText(showtime.getFormattedDate());
+            tvShowtimeTime.setText(showtime.getFormattedStartTime() + " - " + showtime.getFormattedEndTime());
+        }
+    }
+
+    private void updateSeatsUI() {
+        if (tvSeatsInfo != null && seats != null && !seats.isEmpty()) {
+            tvSeatsInfo.setText("Ghế: " + String.join(", ", seats));
+        }
+    }
 
     // ================== HOLD ==================
+
+    // Cập nhật method doHold để hiển thị giá chính thức
     private void doHold(String showtimeId, ArrayList<String> seats) {
         Map<String, java.util.List<String>> body = new HashMap<>();
         body.put("seats", seats);
@@ -124,76 +562,42 @@ public class PaymentActivity extends AppCompatActivity {
             public void onResponse(Call<HoldSeatsResponse> call, Response<HoldSeatsResponse> res) {
                 if (!res.isSuccessful() || res.body() == null) {
                     Toast.makeText(PaymentActivity.this, "Giữ ghế thất bại: " + res.code(), Toast.LENGTH_SHORT).show();
+                    finish();
                     return;
                 }
 
                 HoldSeatsResponse h = res.body();
                 holdId = h.holdId;
-                amount = (h.amount == null) ? 0L : h.amount.longValue(); // <<— CHỖ QUAN TRỌNG
+                amount = (h.amount == null) ? 0L : h.amount.longValue();
                 expiresAtIso = h.expiresAt;
 
-                priceTextView.setText(
-                        "Ghế: " + String.join(", ", seats) + "\nTạm tính: " + amount + " đ"
-                );
+                Log.d("PaymentActivity", "Hold successful: holdId=" + holdId + ", amount=" + amount);
+
+                // Cập nhật UI với giá chính thức từ hold response
+                updateFinalPriceUI();
+
+                startHoldTimer(expiresAtIso);
                 setButtonsEnabled(true);
-                startHoldCountdown(expiresAtIso);
             }
 
             @Override
             public void onFailure(Call<HoldSeatsResponse> call, Throwable t) {
-                Toast.makeText(PaymentActivity.this, "Lỗi giữ ghế: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                showError("Lỗi giữ ghế: " + t.getMessage());
             }
         });
     }
 
-
-    private static long asLong(Object o) {
-        if (o == null) return 0L;
-        if (o instanceof Number) return ((Number) o).longValue(); // xử lý Double -> long
-        try {
-            String s = String.valueOf(o).trim();
-            if (s.endsWith(".0")) s = s.substring(0, s.length() - 2);
-            return Long.parseLong(s);
-        } catch (Exception ex) {
-            try {
-                double d = Double.parseDouble(String.valueOf(o));
-                return (long) d; // hoặc Math.round(d) tuỳ bạn
-            } catch (Exception ignore) {
-                return 0L;
-            }
-        }
-    }
-
-    private void startHoldCountdown(String expiresAtIso) {
-        if (expiresAtIso == null) return;
-        try {
-            long ms = Duration.between(Instant.now(), Instant.parse(expiresAtIso)).toMillis();
-            if (ms < 0) ms = 0;
-            if (holdTimer != null) holdTimer.cancel();
-            holdTimer = new CountDownTimer(ms, 1000) {
-                @Override
-                public void onTick(long l) {
-                    long s = l / 1000;
-                    tvCountdown.setText("Giữ ghế còn: " + (s / 60) + "m " + (s % 60) + "s");
-                }
-
-                @Override
-                public void onFinish() {
-                    tvCountdown.setText("Hết hạn giữ ghế");
-                    setButtonsEnabled(false);
-                }
-            }.start();
-        } catch (Throwable ignore) {
-        }
-    }
-
-    // ================== CASH ==================
+    // ================== PAY CASH ==================
     private void payCash() {
-        if (holdId == null || holdId.isBlank()) {
-            Toast.makeText(this, "Thiếu holdId", Toast.LENGTH_SHORT).show();
+        if (holdId == null) {
+            showError("HoldId không tồn tại. Vui lòng chọn ghế lại.");
+            Intent intent = new Intent(PaymentActivity.this, SeatPickerActivity.class);
+            intent.putExtra("showtimeId", showtimeId);
+            startActivity(intent);
+            finish();
             return;
         }
-        // /api/bookings — body Map<String,String>
+
         Map<String, String> body = new HashMap<>();
         body.put("holdId", holdId);
         body.put("paymentMethod", "CASH");
@@ -202,77 +606,96 @@ public class PaymentActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
                 if (!res.isSuccessful() || res.body() == null) {
-                    showError("Tạo vé (CASH) thất bại: " + res.code());
+                    String errorBody = "";
+                    try { errorBody = res.errorBody() != null ? res.errorBody().string() : "No body"; } catch (Exception e) {}
+                    Log.e("PaymentActivity", "Cash booking failed: " + res.code() + " - " + errorBody);
+                    if (res.code() == 409) {
+                        showError("HoldId hết hạn hoặc bị xung đột. Vui lòng chọn ghế lại.");
+                        Intent intent = new Intent(PaymentActivity.this, SeatPickerActivity.class);
+                        intent.putExtra("showtimeId", showtimeId);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        showError("Không tạo được booking: " + res.code() + " - " + errorBody);
+                    }
                     return;
                 }
+
                 BookingResponse b = res.body();
-                if (!"CONFIRMED".equalsIgnoreCase(b.status)) {
-                    Toast.makeText(PaymentActivity.this, "Vé chưa xác nhận: " + b.status, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                Toast.makeText(PaymentActivity.this, "Đặt vé thành công (CASH): " + b.bookingCode, Toast.LENGTH_LONG).show();
+                Toast.makeText(PaymentActivity.this, "Đặt vé thành công (thanh toán tại quầy): " + b.getBookingCode(), Toast.LENGTH_LONG).show();
+
+                Intent i = new Intent(PaymentActivity.this, BillActivity.class);
+                i.putExtra("bookingId", b.getBookingId());
+                i.putExtra("showtimeId", savedShowtimeId);
+                i.putStringArrayListExtra("seats", savedSeats);
+                startActivity(i);
                 finish();
             }
 
             @Override
             public void onFailure(Call<BookingResponse> call, Throwable t) {
-                showError("Lỗi CASH: " + t.getMessage());
+                showError("Lỗi đặt vé CASH: " + t.getMessage());
             }
         });
     }
 
-    // ================== ZALOPAY ==================
+
+    // ================== PAY ZALO ==================
     private void payZalo() {
-        if (holdId == null || holdId.isBlank()) {
-            Toast.makeText(this, "Thiếu holdId", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        // B1. /api/bookings/zalopay — body Map<String,String> {holdId}
+        String token = RetrofitClient.getToken();
+        Log.d("PaymentActivity", "Token before payZalo: " + (token != null ? token.substring(0, 20) + "..." : "null"));
+
         Map<String, String> body = new HashMap<>();
         body.put("holdId", holdId);
+        body.put("paymentMethod", "ZALOPAY");
 
         api.createBookingZaloPay(body).enqueue(new Callback<BookingResponse>() {
             @Override
             public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
                 if (!res.isSuccessful() || res.body() == null) {
-                    showError("Không tạo được booking ZP: " + res.code());
+                    showError("Không tạo được booking: " + res.code());
                     return;
                 }
                 BookingResponse b = res.body();
-                bookingId = b.bookingId; // server trả về id để poll
+                bookingId = b.bookingId;
+                Log.d("PaymentActivity", "Booking created: " + bookingId);
 
-                // B2. /api/payments/zalopay/create — body Map<String,String> {bookingId}
                 Map<String, String> body2 = new HashMap<>();
                 body2.put("bookingId", bookingId);
 
                 api.createZpOrder(body2).enqueue(new Callback<ZpCreateOrderResponse>() {
                     @Override
                     public void onResponse(Call<ZpCreateOrderResponse> call, Response<ZpCreateOrderResponse> r2) {
-                        if (!r2.isSuccessful() || r2.body() == null
-                                || r2.body().order_url == null || r2.body().order_url.trim().isEmpty()) {
-                            showError("Không tạo được đơn thanh toán: " + r2.code());
+                        Log.d("PaymentActivity", "ZP Response Code: " + r2.code());
+                        Log.d("PaymentActivity", "ZP Response Body: " + r2.body());
+
+                        if (!r2.isSuccessful() || r2.body() == null) {
+                            String errorBody = "";
+//                            try { errorBody = res.errorBody() != null ? res.errorBody().string() : "No body"; } catch (Exception e) {}
+                            try { errorBody = r2.errorBody() != null ? r2.errorBody().string() : "No body"; } catch (Exception e) {}
+                            showError("Tạo order thất bại: " + res.code() + " - " + errorBody);
+                            Log.e("PaymentActivity", "Create order failed: " + res.code() + " - " + errorBody);
                             return;
                         }
 
                         ZpCreateOrderResponse zp = r2.body();
-                        String orderUrl = zp.order_url;              // ✅ Đọc từ field của DTO
-                        // (tuỳ chọn) bạn cũng có thể lấy thêm:
-                        // String appTransId = zp.app_trans_id;
-                        // String zpTransToken = zp.zp_trans_token;
+                        String orderUrl = zp.getOrderUrl();
 
-                        try {
-                            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(orderUrl));
-                            i.addCategory(Intent.CATEGORY_BROWSABLE);
-                            startActivity(i);
-
-                        } catch (Exception e) {
-                            showError("Không mở được trình duyệt: " + e.getMessage());
+                        if (orderUrl == null || orderUrl.isEmpty()) {
+                            showError("Không nhận được URL thanh toán");
+                            Log.e("PaymentActivity", "orderUrl is null/empty, response: " + zp);
+//                            openZpOrderUrl(orderUrl);
+//                            startPollingBooking();
                             return;
+                        }else {
+                            showError("Không nhận được URL thanh toán từ backend (502). Kiểm tra log backend.");
+                            Log.e("PaymentActivity", "orderUrl is null, response: " + (res.body() != null ? res.body().toString() : "null"));
                         }
 
-                        // B3. poll trạng thái booking
-                        startPollingBooking();
-                        Toast.makeText(PaymentActivity.this, "Đang chờ thanh toán...", Toast.LENGTH_SHORT).show();
+                        Log.d("PaymentActivity", "FORCE OPEN WEB URL: " + orderUrl);
+
+                        // FORCE WEB URL - BỎ SDK HOÀN TOÀN
+                        launchZaloPayWebUrl(orderUrl);
                     }
 
                     @Override
@@ -280,7 +703,6 @@ public class PaymentActivity extends AppCompatActivity {
                         showError("Lỗi tạo đơn ZP: " + t.getMessage());
                     }
                 });
-
             }
 
             @Override
@@ -290,47 +712,131 @@ public class PaymentActivity extends AppCompatActivity {
         });
     }
 
-    // ================== POLLING ==================
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        handleDeeplink(intent);
-    }
+    private void launchZaloPayWebUrl(String orderUrl) {
+        Log.d("PaymentActivity", "=== LAUNCH ZALOPAY WEB ===");
+        Log.d("PaymentActivity", "URL: " + orderUrl);
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Phòng trường hợp hệ thống deliver intent lúc resume
-        handleDeeplink(getIntent());
-    }
+        try {
+            // 1. THỬ ZALOPAY APP SCHEME
+            String queryParams = orderUrl.contains("?") ? orderUrl.split("\\?")[1] : "";
+            Uri zaloPayUri = Uri.parse("zalopay://pay?" + queryParams);
+            Intent zaloPayIntent = new Intent(Intent.ACTION_VIEW, zaloPayUri);
+            zaloPayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-    private void handleDeeplink(Intent intent) {
-        Uri data = (intent != null) ? intent.getData() : null;
-        if (data == null) return;
-        if ("myapp".equalsIgnoreCase(data.getScheme())
-                && "zp-callback".equalsIgnoreCase(data.getHost())) {
-            String id = data.getQueryParameter("bookingId");
-            String canceled = data.getQueryParameter("canceled");
-            if (canceled != null) {
-                stopPolling();
-                showError("Bạn đã hủy thanh toán.");
-                return;
+            if (zaloPayIntent.resolveActivity(getPackageManager()) != null) {
+                Log.d("PaymentActivity", "Opening ZaloPay app scheme");
+                startActivity(zaloPayIntent);
+            } else {
+                Log.d("PaymentActivity", "ZaloPay app not found, using web");
+                openWebBrowser(orderUrl);
             }
-            if (id != null && !id.isEmpty()) {
-                // GÁN vào field để startPollingBooking() dùng
-                this.bookingId = id;
-                startPollingBooking();
-            }
+
+            // START POLLING NGAY Cả app scheme và web
+            startPollingBooking();
+            Toast.makeText(this, "Đang chuyển đến ZaloPay...", Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+            Log.e("PaymentActivity", "ZaloPay launch failed", e);
+            // FINAL FALLBACK: WEB BROWSER
+            openWebBrowser(orderUrl);
+            startPollingBooking();
         }
     }
 
+    private void openWebBrowser(String orderUrl) {
+        try {
+            Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(orderUrl));
+            webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(webIntent);
+            Log.d("PaymentActivity", "Web browser opened successfully");
+        } catch (Exception e) {
+            Log.e("PaymentActivity", "Web browser failed", e);
+            showError("Không thể mở ZaloPay");
+
+            // PLAY STORE FALLBACK
+            Intent playStoreIntent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=vn.com.vng.zalopay"));
+            playStoreIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(playStoreIntent);
+        }
+    }
+
+    // ================== DEEPLINK HANDLING (FALLBACK) ==================
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        Intent it = getIntent();
+        if (it != null && it.getBooleanExtra("pending", false)) {
+            String id = it.getStringExtra("bookingId");
+            if (id != null) startPollingBooking(id); // overload có tham số
+        }
+    }
+
+//    private void handleDeeplink(Intent intent) {
+//        Uri data = (intent != null) ? intent.getData() : null;
+//        Log.d("PaymentActivity", "Deep link received: " + data);
+//
+//        if (data == null) return;
+//
+//        if ("myapp".equalsIgnoreCase(data.getScheme()) && "zp-callback".equalsIgnoreCase(data.getHost())) {
+//            String id = data.getQueryParameter("bookingId");
+//            String status = data.getQueryParameter("status");
+//
+//            Log.d("PaymentActivity", "Deep link: id=" + id + ", status=" + status);
+//
+//            if (id != null && !id.isEmpty()) {
+//                this.bookingId = id;
+//
+//                // SUCCESS → BILL ACTIVITY NGAY (KHÔNG CẦN POLLING)
+//                if ("SUCCESS".equalsIgnoreCase(status)) {
+//                    stopPolling();
+//                    Log.d("PaymentActivity", "SUCCESS deep link - direct to BillActivity");
+//                    showError("Thanh toán thành công!");
+//                    navigateToBillActivity();
+//                    return;
+//                }
+//
+//                // CANCELED → ERROR
+//                String canceled = data.getQueryParameter("canceled");
+//                if (canceled != null && ("1".equals(canceled) || "true".equals(canceled))) {
+//                    stopPolling();
+//                    showError("Thanh toán đã bị hủy");
+//                    finish();
+//                    return;
+//                }
+//
+//                // FALLBACK: Start polling
+//                startPollingBooking();
+//            }
+//        }
+//    }
+
+
+    // Dùng khi this.bookingId đã được set sẵn
     private void startPollingBooking() {
-        if (bookingId == null) return;
+        if (bookingId == null || bookingId.trim().isEmpty()) {
+            Log.w("PaymentActivity", "startPollingBooking(): bookingId null/empty → bỏ qua");
+            return;
+        }
         if (isPolling) return;
         isPolling = true;
-        pollHandler.postDelayed(pollTask, 2000);
+        pollHandler.post(pollTask);
     }
+
+    // Dùng khi bạn đang cầm id mà chưa set vào field
+    private void startPollingBooking(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            Log.w("PaymentActivity", "startPollingBooking(id): id null/empty");
+            return;
+        }
+        this.bookingId = id;
+        startPollingBooking(); // gọi về bản không tham số
+    }
+
 
     private void stopPolling() {
         isPolling = false;
@@ -338,50 +844,146 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     private final Runnable pollTask = new Runnable() {
-        final long started = System.currentTimeMillis();
-        final long TIMEOUT_MS = 3 * 60 * 1000; // 3 phút
+        private long started = System.currentTimeMillis();
+        private static final long TIMEOUT_MS = 5 * 60 * 1000; // 5 phút
 
         @Override
         public void run() {
-            if (!isPolling || bookingId == null) return;
+            if (!isPolling || bookingId == null) {
+                Log.w("PaymentActivity", "Polling stopped: isPolling=" + isPolling + ", bookingId=" + bookingId);
+                return;
+            }
+
+            Log.d("PaymentActivity", "Polling booking: " + bookingId);
+
             api.getBooking(bookingId).enqueue(new Callback<BookingResponse>() {
                 @Override
                 public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
-                    if (!isPolling) return;
+                    if (!isPolling) {
+                        Log.w("PaymentActivity", "Polling aborted: isPolling=false");
+                        return;
+                    }
+
+                    Log.d("PaymentActivity", "Poll response: " + res.code() +
+                            ", body: " + (res.body() != null ? res.body().getStatus() : "null"));
+
                     if (res.isSuccessful() && res.body() != null) {
                         BookingResponse b = res.body();
-                        if ("CONFIRMED".equalsIgnoreCase(b.status)) {
+                        String currentStatus = b.getStatus();
+
+                        // CHỈ CONFIRMED MỚI SUCCESS, PENDING_PAYMENT CONTINUE POLLING
+                        if ("CONFIRMED".equalsIgnoreCase(currentStatus)) {
                             stopPolling();
-                            Toast.makeText(PaymentActivity.this, "Thanh toán thành công: " + b.bookingCode, Toast.LENGTH_LONG).show();
+                            Log.d("PaymentActivity", "Payment CONFIRMED! Navigating to BillActivity");
+                            showMessage("Thanh toán thành công: " + b.getBookingCode());
+                            navigateToBillActivity();
+                            return;
+                        }
+
+                        // PENDING_PAYMENT → CONTINUE POLLING
+                        if ("PENDING_PAYMENT".equalsIgnoreCase(currentStatus)) {
+                            Log.d("PaymentActivity", "Still PENDING_PAYMENT - waiting for IPN...");
+//                            if (!triedAutoConfirm) {
+//                                triedAutoConfirm = true;
+//                                // Gọi confirm ngay 1 lần
+//                                Map<String, Object> emptyBody = new HashMap<>(); // nếu API không cần body
+//                                api.confirmBooking(bookingId, emptyBody).enqueue(new Callback<ConfirmResponse>() {
+//                                    @Override
+//                                    public void onResponse(Call<ConfirmResponse> call, Response<ConfirmResponse> r) {
+//                                        if (r.isSuccessful() && r.body() != null && r.body().success) {
+//                                            // Đã confirm → điều hướng luôn
+//                                            stopPolling();
+//                                            showMessage("Thanh toán thành công!");
+//                                            navigateToBillActivity();
+//                                        } else {
+//                                            // Vẫn chưa confirm được → tiếp tục polling
+//                                            scheduleNextRun();
+//                                        }
+//                                    }
+//                                    @Override
+//                                    public void onFailure(Call<ConfirmResponse> call, Throwable t) {
+//                                        // Lỗi mạng → tiếp tục polling
+//                                        scheduleNextRun();
+//                                    }
+//                                });
+//                                return;
+//                            }
+                            // Đã thử confirm 1 lần rồi → tiếp tục polling cho tới khi IPN tới
+                            scheduleNextRun();
+                            return;
+                        }
+
+                        // FAILED/CANCELED → STOP
+                        if ("FAILED".equalsIgnoreCase(currentStatus) || "CANCELED".equalsIgnoreCase(currentStatus)) {
+                            stopPolling();
+                            showError("Thanh toán thất bại: " + currentStatus);
                             finish();
                             return;
                         }
-                        if ("FAILED".equalsIgnoreCase(b.status) || "CANCELED".equalsIgnoreCase(b.status)) {
-                            stopPolling();
-                            showError("Thanh toán thất bại: " + b.status);
-                            return;
-                        }
+
+                        // UNKNOWN → CONTINUE
+                        Log.w("PaymentActivity", "Unknown status: " + currentStatus + " - continue polling");
+                        scheduleNextRun();
+                    } else {
+                        Log.w("PaymentActivity", "Poll failed: " + res.code() + " - retry");
+                        scheduleNextRun();
                     }
-                    scheduleNext();
                 }
 
                 @Override
                 public void onFailure(Call<BookingResponse> call, Throwable t) {
-                    scheduleNext();
+                    Log.e("PaymentActivity", "Polling network error: " + t.getMessage());
+                    scheduleNextRun(); // Retry network error
                 }
 
-                private void scheduleNext() {
-                    if (!isPolling) return;
-                    if (System.currentTimeMillis() - started > TIMEOUT_MS) {
-                        stopPolling();
-                        showError("Hết thời gian chờ thanh toán.");
+                private void scheduleNextRun() {
+                    if (!isPolling) {
+                        Log.w("PaymentActivity", "ScheduleNext đã bị hủy: isPolling=false");
                         return;
                     }
-                    pollHandler.postDelayed(pollTask, 2000);
+
+                    long elapsed = System.currentTimeMillis() - started;
+                    if (elapsed > TIMEOUT_MS) {
+                        stopPolling();
+                        showError("Hết thời gian chờ thanh toán. Vui lòng thử lại.");
+                        finish();
+                        return;
+                    }
+
+                    // Backoff: 2s → 3s → 4s → 5s max
+                    long delay = Math.min(2000 + (elapsed / 2000), 5000);
+                    Log.d("PaymentActivity", "Next poll in " + delay + "ms (total elapsed: " + elapsed + "ms)");
+                    pollHandler.postDelayed(pollTask, delay); // SỬA: Dùng pollTask tham chiếu rõ ràng
                 }
             });
         }
     };
+    private void openZpOrderUrl(String orderUrl) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(orderUrl));
+            startActivity(intent);
+            Log.d("PaymentActivity", "Opened ZaloPay with orderUrl: " + orderUrl);
+        } catch (Exception e) {
+            showError("Không mở được ZaloPay: " + e.getMessage());
+            Log.e("PaymentActivity", "Failed to open orderUrl: " + orderUrl, e);
+        }
+    }
+    private void navigateToBillActivity() {
+        if (bookingId == null) {
+            Log.e("PaymentActivity", "Không thể điều hướng: bookingId là null");
+            return;
+        }
+        Log.d("PaymentActivity", "Điều hướng đến BillActivity với bookingId: " + bookingId);
+
+        Intent i = new Intent(PaymentActivity.this, BillActivity.class);
+        i.putExtra(BillActivity.EXTRA_BOOKING_ID, bookingId);
+        if (savedShowtimeId != null) i.putExtra("showtimeId", savedShowtimeId);
+        if (savedSeats != null) i.putStringArrayListExtra("seats", savedSeats);
+
+        startActivity(i);
+        stopPolling();
+        finish();
+    }
 
     private static String str(Object o) {
         return o == null ? null : String.valueOf(o);
@@ -395,7 +997,83 @@ public class PaymentActivity extends AppCompatActivity {
         }
     }
 
+    private void checkBookingStatusDirect(String bookingId) {
+        api.getBooking(bookingId).enqueue(new Callback<BookingResponse>() {
+            @Override
+            public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
+                if (res.isSuccessful() && res.body() != null) {
+                    BookingResponse b = res.body();
+
+                    // THÊM PENDING_PAYMENT vào success condition
+                    if ("CONFIRMED".equalsIgnoreCase(b.getStatus()) ||
+                            "PENDING_PAYMENT".equalsIgnoreCase(b.getStatus())) {
+
+                        Toast.makeText(PaymentActivity.this, "Thanh toán thành công: " + b.getBookingCode(), Toast.LENGTH_LONG).show();
+
+                        // DÙNG SEATS TỪ savedSeats (từ SeatPicker), hoặc fetch sau
+                        Intent i = new Intent(PaymentActivity.this, BillActivity.class);
+                        i.putExtra(BillActivity.EXTRA_BOOKING_ID, b.getBookingId());
+                        if (savedShowtimeId != null) i.putExtra("showtimeId", savedShowtimeId);
+                        if (savedSeats != null) i.putStringArrayListExtra("seats", savedSeats);
+                        // BillActivity sẽ fetch lại nếu thiếu
+                        startActivity(i);
+                        finish();
+
+                    } else if ("FAILED".equalsIgnoreCase(b.getStatus()) || "CANCELED".equalsIgnoreCase(b.getStatus())) {
+                        showError("Thanh toán thất bại: " + b.getStatus());
+                        finish();
+                    } else {
+                        showError("Trạng thái thanh toán chưa xác nhận: " + b.getStatus());
+                    }
+                } else {
+                    showError("Lỗi kiểm tra trạng thái: " + res.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BookingResponse> call, Throwable t) {
+                showError("Lỗi kết nối: " + t.getMessage());
+            }
+        });
+    }
+    private void checkBookingStatus() {
+        if (bookingId == null) return;
+        api.getBooking(bookingId).enqueue(new Callback<BookingResponse>() {
+            @Override
+            public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
+                if (res.isSuccessful() && res.body() != null) {
+                    BookingResponse b = res.body();
+                    if ("CONFIRMED".equalsIgnoreCase(b.getStatus())) {
+                        Toast.makeText(PaymentActivity.this, "Thanh toán thành công: " + b.getBookingCode(), Toast.LENGTH_LONG).show();
+                        Intent i = new Intent(PaymentActivity.this, BillActivity.class);
+                        i.putExtra("bookingId", b.getBookingId());
+                        i.putExtra("showtimeId", savedShowtimeId);
+                        i.putStringArrayListExtra("seats", savedSeats);
+                        startActivity(i);
+                        finish();
+                    } else if ("FAILED".equalsIgnoreCase(b.getStatus()) || "CANCELED".equalsIgnoreCase(b.getStatus())) {
+                        showError("Thanh toán thất bại: " + b.getStatus());
+                        finish();
+                    } else {
+                        showError("Trạng thái thanh toán chưa xác nhận. Vui lòng kiểm tra sau.");
+                    }
+                } else {
+                    showError("Lỗi kiểm tra trạng thái: " + res.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BookingResponse> call, Throwable t) {
+                showError("Lỗi kiểm tra trạng thái: " + t.getMessage());
+            }
+        });
+    }
+
     private void showError(String msg) {
+        Toast.makeText(PaymentActivity.this, msg, Toast.LENGTH_LONG).show();
+        Log.e("PaymentActivity", msg);
+    }
+    private void showMessage(String msg) {
         Toast.makeText(PaymentActivity.this, msg, Toast.LENGTH_LONG).show();
         Log.e("PaymentActivity", msg);
     }

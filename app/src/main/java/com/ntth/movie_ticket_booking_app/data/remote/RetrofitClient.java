@@ -80,26 +80,28 @@ public class RetrofitClient {
                         Log.d("RetrofitClient", "Authorization Header: " + req.header("Authorization"));
                         return chain.proceed(req);
                     })
+                    .addInterceptor(new Interceptor() { // THÊM: Interceptor add token
+                        @Override
+                        public Response intercept(Chain chain) throws IOException {
+                            Request original = chain.request();
+                            String token = getToken(); // Lấy token từ prefs
+                            Request.Builder builder = original.newBuilder();
+                            if (token != null && !token.isEmpty()) {
+                                builder.header("Authorization", "Bearer " + token);
+                                Log.d("RetrofitClient", "Added Authorization: Bearer " + token.substring(0, 20) + "..."); // Log partial token
+                            } else {
+                                Log.w("RetrofitClient", "No token found, request without Authorization");
+                            }
+                            Request request = builder.build();
+                            return chain.proceed(request);
+                        }
+                    })
                     .retryOnConnectionFailure(true)
                     .connectTimeout(60, TimeUnit.SECONDS)
                     .readTimeout(90, TimeUnit.SECONDS)
                     .writeTimeout(90, TimeUnit.SECONDS)
-                    .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)); // Đảm bảo log đầy đủ
+                    .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)); // Giữ log
 
-            // Nếu có token thì gắn Authorization header
-            if (jwt != null && !jwt.isEmpty()) {
-                okb.addInterceptor(new Interceptor() {
-                    @Override
-                    public Response intercept(Chain chain) throws IOException {
-                        Request req = chain.request().newBuilder()
-                                .addHeader("Accept", "application/json")
-                                .addHeader("Authorization", "Bearer " + jwt)
-                                .build();
-                        return chain.proceed(req);
-
-                    }
-                });
-            }
             Gson gson = new GsonBuilder()
                     .setLenient()
                     .registerTypeAdapter(double.class, new JsonDeserializer<Double>() {
@@ -108,6 +110,7 @@ public class RetrofitClient {
                             try {
                                 return json.getAsDouble();
                             } catch (NumberFormatException e) {
+                                Log.e("Gson", "Failed to parse double: " + json.toString());
                                 return null;
                             }
                         }
@@ -129,12 +132,8 @@ public class RetrofitClient {
         return getInstance().create(ApiService.class);
     }
 
-    // ==== Token helpers ====
+    // ==== Token helpers ==== (giữ nguyên)
 
-    /**
-     * Lưu JWT sau khi login
-     * Token sẽ tồn tại cho đến khi logout hoặc hết hạn
-     */
     public static void saveToken(String token) {
         ensureInited();
         prefs().edit().putString(KEY_JWT, token).apply();
@@ -144,19 +143,13 @@ public class RetrofitClient {
     public static void saveToken(Context ignoredCtx, String token) {
         saveToken(token);
     }
-    /**
-     * logout xoá token ở client khỏi SharedPreferences
-     * và rebuild Retrofit (xóa header Authorization).
-     */
+
     public static void clearToken() {
         ensureInited();
         prefs().edit().remove(KEY_JWT).apply();
         retrofit = null; // rebuild để xoá interceptor Authorization
     }
 
-    /**
-     * Lấy JWT trong SharedPreferences
-     */
     public static String getToken() {
         ensureInited();
         return prefs().getString(KEY_JWT, null);
@@ -174,26 +167,21 @@ public class RetrofitClient {
             );
         }
     }
-//    // ==== Base URL helper (nếu muốn đổi lúc runtime) ====
-//    public static void setBaseUrl(String baseUrl) {
-//        BASE_URL = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-//        retrofit = null;
+
+    // Adapter tùy chỉnh (giữ nguyên)
+//    static class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
+//        @Override
+//        public JsonElement serialize(LocalDate src, Type typeOfSrc, com.google.gson.JsonSerializationContext context) {
+//            return new JsonPrimitive(src.toString());
+//        }
+//
+//        @Override
+//        public LocalDate deserialize(JsonElement json, Type typeOfT, com.google.gson.JsonDeserializationContext context) throws com.google.gson.JsonParseException {
+//            try {
+//                return LocalDate.parse(json.getAsString());
+//            } catch (DateTimeParseException e) {
+//                return null;  // Hoặc throw exception tùy nhu cầu
+//            }
+//        }
 //    }
-
-    // Adapter tùy chỉnh (xử lý parse đơn giản, bạn có thể mở rộng cho nhiều format)
-    static class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
-        @Override
-        public JsonElement serialize(LocalDate src, Type typeOfSrc, com.google.gson.JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString());
-        }
-
-        @Override
-        public LocalDate deserialize(JsonElement json, Type typeOfT, com.google.gson.JsonDeserializationContext context) throws com.google.gson.JsonParseException {
-            try {
-                return LocalDate.parse(json.getAsString());
-            } catch (DateTimeParseException e) {
-                return null;  // Hoặc throw exception tùy nhu cầu
-            }
-        }
-    }
 }

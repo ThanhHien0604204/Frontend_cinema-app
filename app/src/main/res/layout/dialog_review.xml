@@ -7,12 +7,15 @@
 
     <RatingBar
         android:id="@+id/ratingBar"
+        style="@style/RatingBarTint"
+        android:maxHeight="50dp"
+        android:minHeight="40dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:numStars="5"
-        android:stepSize="1.0"
+        android:stepSize="0.5"
+        android:isIndicator="false"
         android:layout_marginBottom="16dp"/>
-
     <EditText
         android:id="@+id/reviewEditText"
         android:layout_width="match_parent"

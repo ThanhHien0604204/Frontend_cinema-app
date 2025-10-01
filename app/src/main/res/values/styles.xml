@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Các style khác của bạn -->
+
+    <!-- Style tùy chỉnh cho RatingBar -->
+    <style name="RatingBarTint" parent="Widget.AppCompat.RatingBar">
+        <item name="android:progressTint">@color/star_active</item>
+        <item name="android:secondaryProgressTint">@color/star_active</item>
+        <item name="android:progressBackgroundTint">@color/star_inactive</item>
+
+        <!-- tuỳ chọn: chỉnh kích thước sao -->
+        <item name="android:minHeight">24dp</item>
+        <item name="android:maxHeight">24dp</item>
+    </style>
+
+    <!-- Error Text Appearance -->
+    <style name="ErrorTextAppearance" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textColor">@color/error_red</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Circle Image Style -->
+    <style name="CircleImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="Widget.Material3.Button.Filled.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/purple_700</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">28dp</item>
+    </style>
+</resources>

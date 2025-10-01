@@ -86,4 +86,6 @@ dependencies {
     implementation("commons-codec:commons-codec:1.14")
 
     implementation ("jp.wasabeef:glide-transformations:4.3.0")
+
+    implementation ("me.zhanghai.android.materialratingbar:library:1.4.0")
 }

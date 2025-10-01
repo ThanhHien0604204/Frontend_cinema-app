@@ -1,30 +1,41 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
         android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    android:layout_marginTop="10dp"
+    app:cardCornerRadius="12dp"
         android:orientation="horizontal"
         android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_margin="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
 
         <ImageView
             android:id="@+id/imgPoster"
             android:layout_width="170dp"
+            android:layout_height="210dp"
             android:layout_marginTop="10dp"
-            android:layout_height="200dp"
             app:srcCompat="@drawable/button_chon" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginLeft="20dp"
+            android:layout_marginTop="5dp"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="10dp"
                 android:padding="8dp"
                 android:text="LINH MIÊU"
                 android:textColor="@android:color/white"
@@ -36,9 +47,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="4dp"
-                android:textColor="@android:color/white"
                 android:text="Thời lượng: 110 Phút"
-                 />
+                android:textColor="@android:color/white" />
 
             <TextView
                 android:id="@+id/tvShowTime"
@@ -52,10 +62,12 @@
                 android:id="@+id/btnBooking"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/button"
-                android:layout_marginTop="10dp"
                 android:layout_margin="5dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button"
                 android:text="Đặt vé"
-                android:textColor="@android:color/white"/>
+                android:textColor="@android:color/white" />
         </LinearLayout>
-</LinearLayout>
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

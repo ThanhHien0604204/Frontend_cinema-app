@@ -66,18 +66,18 @@ public class AdminMainActivity extends AppCompatActivity {
         imQuanLyNguoiDung.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent intent = new Intent(AdminMainActivity.this, QuanLyNguoiDungActivity.class);
-//                startActivity(intent);
+                Intent intent = new Intent(AdminMainActivity.this, QuanLyNguoiDungActivity.class);
+                startActivity(intent);
             }
         });
 
-//        imQuanLySuat.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent intent = new Intent(AdminMainActivity.this, QuanLySuatActivity.class);
-//                startActivity(intent);
-//            }
-//        });
+        imQuanLySuat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(AdminMainActivity.this, QuanLySuatActivity.class);
+                startActivity(intent);
+            }
+        });
 
 //        imThongKe.setOnClickListener(new View.OnClickListener() {
 //            @Override

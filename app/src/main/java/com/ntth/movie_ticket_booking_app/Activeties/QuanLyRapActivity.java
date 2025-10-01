@@ -32,6 +32,8 @@ public class QuanLyRapActivity extends AppCompatActivity {
     private HashMap<String, String> rapMap; // Map để lưu tên và ID của rạp
     private ArrayAdapter<String> adapter;
     private ApiService apiService;
+    private static final int REQUEST_CODE_DETAIL = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +56,7 @@ public class QuanLyRapActivity extends AppCompatActivity {
         ImageView imAdd = findViewById(R.id.imAdd);
         imAdd.setOnClickListener(v -> {
             Intent intent = new Intent(QuanLyRapActivity.this, QuanLyRapDetailActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
         });
 
         ImageView imBack = findViewById(R.id.imBack);
@@ -67,7 +69,7 @@ public class QuanLyRapActivity extends AppCompatActivity {
             if (rapId != null) {
                 Intent intent = new Intent(QuanLyRapActivity.this, QuanLyRapDetailActivity.class);
                 intent.putExtra("locationId", rapId);
-                startActivity(intent);
+                startActivityForResult(intent, REQUEST_CODE_DETAIL);
             } else {
                 Toast.makeText(QuanLyRapActivity.this, "Không tìm thấy rạp này!", Toast.LENGTH_SHORT).show();
             }
@@ -109,5 +111,13 @@ public class QuanLyRapActivity extends AppCompatActivity {
                 Toast.makeText(QuanLyRapActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        System.out.println("onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
+        if (requestCode == REQUEST_CODE_DETAIL && resultCode == RESULT_OK) {
+            fetchRaps();
+        }
     }
 }

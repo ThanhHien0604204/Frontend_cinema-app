@@ -1,6 +1,14 @@
 package com.ntth.movie_ticket_booking_app.dto;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
+
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class MovieRequest {
@@ -8,6 +16,7 @@ public class MovieRequest {
     String imageUrl;
      Integer durationMinutes;
     List<String> genre; // Danh sách tên thể loại
+    @JsonAdapter(LocalDateAdapter.class)
     LocalDate movieDateStart;
     Double rating;
     String summary;
@@ -102,5 +111,28 @@ public class MovieRequest {
 
     public void setViews(Long views) {
         this.views = views;
+    }
+
+    // Gson adapter để serialize/deserialize LocalDate
+    static class LocalDateAdapter extends TypeAdapter<LocalDate> {
+        private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        @Override
+        public void write(JsonWriter out, LocalDate value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(formatter.format(value));
+            }
+        }
+
+        @Override
+        public LocalDate read(JsonReader in) throws IOException {
+            if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                in.nextNull();
+                return null;
+            }
+            return LocalDate.parse(in.nextString(), formatter);
+        }
     }
 }

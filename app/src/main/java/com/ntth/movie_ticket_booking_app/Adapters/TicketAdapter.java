@@ -1,6 +1,7 @@
 package com.ntth.movie_ticket_booking_app.Adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.ntth.movie_ticket_booking_app.Activeties.BillActivity;
 import com.ntth.movie_ticket_booking_app.Class.Ticket;
 import com.ntth.movie_ticket_booking_app.R;
 import com.bumptech.glide.Glide;
@@ -61,6 +63,13 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.ViewHolder
         holder.tvStatus.setTextColor(ticket.getStatus().equals("CANCELED")
                 ? context.getResources().getColor(android.R.color.holo_red_dark)
                 : context.getResources().getColor(android.R.color.holo_green_dark));
+
+        // Thêm onClick cho toàn bộ item
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, BillActivity.class);
+            intent.putExtra(BillActivity.EXTRA_BOOKING_ID, ticket.getId());  // Truyền ID của ticket (bookingId)
+            context.startActivity(intent);
+        });
     }
 
     @Override
