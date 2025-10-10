@@ -32,7 +32,7 @@ import retrofit2.Retrofit;
 
 public class ResetPasswordActivity extends AppCompatActivity {
     private TextInputLayout tilToken, tilNewPassword, tilConfirmPassword;
-    private EditText etToken, etNewPassword, etConfirmPassword;
+    private EditText etOtp, etNewPassword, etConfirmPassword;
     private Button btnResetPassword;
     private ProgressBar progressBar;
     private TextView tvBackToLogin;
@@ -58,7 +58,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
         tilNewPassword = findViewById(R.id.tilNewPassword);
         tilConfirmPassword = findViewById(R.id.tilConfirmPassword);
 
-        etToken = findViewById(R.id.etToken);
+        etOtp = findViewById(R.id.etToken);
         etNewPassword = findViewById(R.id.etNewPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
 
@@ -78,7 +78,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
 
     private void setupTextWatchers() {
         // Token validation
-        etToken.addTextChangedListener(new TextWatcher() {
+        etOtp.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -127,12 +127,12 @@ public class ResetPasswordActivity extends AppCompatActivity {
     }
 
     private boolean validateToken() {
-        String token = etToken.getText().toString().trim();
+        String token = etOtp.getText().toString().trim();
         if (token.isEmpty()) {
-            tilToken.setError("Mã token không được để trống");
+            tilToken.setError("Mã OTP không được để trống");
             return false;
         } else if (token.length() < 10) {
-            tilToken.setError("Mã token phải có ít nhất 10 ký tự");
+            tilToken.setError("Mã OYP phải có ít nhất 6 ký tự");
             return false;
         } else {
             tilToken.setError(null);
@@ -175,71 +175,46 @@ public class ResetPasswordActivity extends AppCompatActivity {
     }
 
     private void resetPassword() {
-        if (!isFormValid()) {
-            Toast.makeText(this, "Vui lòng kiểm tra lại thông tin", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String token = etToken.getText().toString().trim();
+        String otp = etOtp.getText().toString().trim();
         String newPassword = etNewPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
 
-        showLoading(true);
+        if (otp.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+            Toast.makeText(this, "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        ResetPasswordRequest request = new ResetPasswordRequest(token, newPassword, confirmPassword);
+        if (!newPassword.equals(confirmPassword)) {
+            Toast.makeText(this, "Mật khẩu không khớp", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        api.resetPassword(request).enqueue(new Callback<ResetPasswordResponse>() {
+        progressBar.setVisibility(View.VISIBLE);
+        btnResetPassword.setEnabled(false);
+
+        ResetPasswordRequest request = new ResetPasswordRequest(otp, newPassword, confirmPassword);
+
+        api.resetPassword(request).enqueue(new Callback<String>() {
             @Override
-            public void onResponse(Call<ResetPasswordResponse> call, Response<ResetPasswordResponse> response) {
-                showLoading(false);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    try {
-                        JSONObject json = new JSONObject(response.body().toString());
-                        String message = json.optString("message", "Thành công!");
-                        boolean success = json.optBoolean("success", false);
-
-                        if (success) {
-                            Toast.makeText(ResetPasswordActivity.this,
-                                    message, Toast.LENGTH_LONG).show();
-
-                            // Chuyển về Login với animation
-                            Intent intent = new Intent(ResetPasswordActivity.this, LoginActivity.class);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(intent);
-                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-                            finishAffinity();
-                        } else {
-                            Toast.makeText(ResetPasswordActivity.this,
-                                    message, Toast.LENGTH_LONG).show();
-
-                            // Focus vào field lỗi
-                            if (message.contains("token")) {
-                                etToken.requestFocus();
-                            }
-                        }
-                    } catch (Exception e) {
-                        Toast.makeText(ResetPasswordActivity.this,
-                                "Có lỗi xảy ra khi xử lý phản hồi", Toast.LENGTH_SHORT).show();
-                    }
+            public void onResponse(Call<String> call, Response<String> response) {
+                progressBar.setVisibility(View.GONE);
+                btnResetPassword.setEnabled(true);
+                if (response.isSuccessful()) {
+                    Toast.makeText(ResetPasswordActivity.this, response.body(), Toast.LENGTH_LONG).show();
+                    // Chuyển về login
+                    Intent intent = new Intent(ResetPasswordActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                    finish();
                 } else {
-                    String errorMessage = "Lỗi server: " + response.code();
-                    if (response.code() == 400) {
-                        errorMessage = "Token không hợp lệ hoặc đã hết hạn";
-                    } else if (response.code() == 401) {
-                        errorMessage = "Không được phép thực hiện";
-                    }
-
-                    Toast.makeText(ResetPasswordActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    Toast.makeText(ResetPasswordActivity.this, "Lỗi: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<ResetPasswordResponse> call, Throwable t) {
-                showLoading(false);
-                Toast.makeText(ResetPasswordActivity.this,
-                        "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
-                Log.e("ResetPassword", "API call failed", t);
+            public void onFailure(Call<String> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                btnResetPassword.setEnabled(true);
+                Toast.makeText(ResetPasswordActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -250,7 +225,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
         btnResetPassword.setText(show ? "Đang xử lý..." : "Đặt lại mật khẩu");
 
         // Disable inputs khi loading
-        etToken.setEnabled(!show);
+        etOtp.setEnabled(!show);
         etNewPassword.setEnabled(!show);
         etConfirmPassword.setEnabled(!show);
     }

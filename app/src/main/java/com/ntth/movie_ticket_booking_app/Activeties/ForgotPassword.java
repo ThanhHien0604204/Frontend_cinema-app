@@ -31,7 +31,7 @@ import retrofit2.Retrofit;
 
 public class ForgotPassword extends AppCompatActivity {
     private ProgressBar progressBar;
-    private Button btnSendResetLink;
+    private Button btnSendOtp;
     private EditText txtEmailXT;
     private TextView txtDK;
     private ApiService api;
@@ -46,7 +46,7 @@ public class ForgotPassword extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        btnSendResetLink = findViewById(R.id.btnGui);
+        btnSendOtp = findViewById(R.id.btnGui);
         progressBar = findViewById(R.id.progressBar);
         txtEmailXT = findViewById(R.id.txtEmailXT);
         txtDK = findViewById(R.id.txtDK);
@@ -58,7 +58,7 @@ public class ForgotPassword extends AppCompatActivity {
         ImageView imBack = findViewById(R.id.imBack);
         imBack.setOnClickListener(v -> finish());
 
-        btnSendResetLink.setOnClickListener(v -> sendResetLink());
+        btnSendOtp.setOnClickListener(v -> sendOtpRequest());
 
         txtDK.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,54 +68,40 @@ public class ForgotPassword extends AppCompatActivity {
             }
         });
     }
-    private void sendResetLink() {
+    private void sendOtpRequest() {
         String email = txtEmailXT.getText().toString().trim();
-        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Vui lòng nhập email hợp lệ", Toast.LENGTH_SHORT).show();
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập email", Toast.LENGTH_SHORT).show();
             return;
         }
 
         progressBar.setVisibility(View.VISIBLE);
-        btnSendResetLink.setEnabled(false);
+        btnSendOtp.setEnabled(false);
 
         ForgotPasswordRequest request = new ForgotPasswordRequest(email);
 
-        api.forgotPassword(request, "https://movie-ticket-booking-app-fvau.onrender.com")
-                .enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        progressBar.setVisibility(View.GONE);
-                        btnSendResetLink.setEnabled(true);
+        api.forgotPassword(request).enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                progressBar.setVisibility(View.GONE);
+                btnSendOtp.setEnabled(true);
+                if (response.isSuccessful()) {
+                    Toast.makeText(ForgotPassword.this, response.body(), Toast.LENGTH_LONG).show();
+                    // Chuyển đến activity nhập OTP
+                    Intent intent = new Intent(ForgotPassword.this, ResetPasswordActivity.class);
+                    intent.putExtra("email", email);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(ForgotPassword.this, "Lỗi: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
 
-                        try {
-                            JSONObject json = new JSONObject(response.body().string());
-                            String message = json.getString("message");
-                            boolean success = json.getBoolean("success");
-
-                            if (success) {
-                                Toast.makeText(ForgotPassword.this,
-                                        "Link đặt lại mật khẩu đã được gửi đến " + email,
-                                        Toast.LENGTH_LONG).show();
-                                // Chuyển đến màn hình nhập token
-                                Intent intent = new Intent(ForgotPassword.this, ResetPasswordActivity.class);
-                                intent.putExtra("email", email);
-                                startActivity(intent);
-                                finish();
-                            } else {
-                                Toast.makeText(ForgotPassword.this, message, Toast.LENGTH_LONG).show();
-                            }
-                        } catch (Exception e) {
-                            Toast.makeText(ForgotPassword.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        progressBar.setVisibility(View.GONE);
-                        btnSendResetLink.setEnabled(true);
-                        Toast.makeText(ForgotPassword.this,
-                                "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                btnSendOtp.setEnabled(true);
+                Toast.makeText(ForgotPassword.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -17,9 +17,9 @@ import com.ntth.movie_ticket_booking_app.R;
 public class PaymentCallbackActivity extends Activity {
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Uri uri = getIntent() != null ? getIntent().getData() : null;
-        String id = uri != null ? uri.getQueryParameter("bookingId") : null;
-        String status = uri != null ? uri.getQueryParameter("status") : null;
+        Uri uri = getIntent()!=null ? getIntent().getData() : null;
+        String id = uri!=null ? uri.getQueryParameter("bookingId") : null;
+        String status = uri!=null ? uri.getQueryParameter("status") : null;
         if (id == null) { finish(); return; }
 
         Intent next;
@@ -27,16 +27,15 @@ public class PaymentCallbackActivity extends Activity {
             Toast.makeText(this, "Thanh toán thất bại", Toast.LENGTH_SHORT).show();
             finish(); return;
         } else if ("SUCCESS".equalsIgnoreCase(status)) {
-            // Có thể vào Bill ngay; Bill sẽ tự fetch bằng bookingId
             next = new Intent(this, BillActivity.class);
-        } else { // PENDING hoặc null -> quay Payment để polling
-            next = new Intent(this, PaymentActivity.class)
-                    .putExtra("pending", true);
+            next.putExtra("from_payment", true); // Thêm extra để đánh dấu luồng từ thanh toán
+        } else { // PENDING hoặc null
+            next = new Intent(this, PaymentActivity.class).putExtra("pending", true);
         }
-        next.putExtra("bookingId", id);
-        // Đưa activity đích hiện có lên (nếu đang mở), không tạo thêm instance
+        next.putExtra(BillActivity.EXTRA_BOOKING_ID, id);
         next.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(next);
         finish();
     }
 }
+

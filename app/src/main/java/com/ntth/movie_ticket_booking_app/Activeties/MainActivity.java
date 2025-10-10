@@ -357,6 +357,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onNewIntent(intent);
         setIntent(intent);
         handleDeepLink(intent);
+        updateNavigationMenu();
+        showUserInfomation(); // Cập nhật thông tin người dùng khi nhận Intent mới
     }
 
     private void handleDeepLink(Intent intent) {
@@ -384,9 +386,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             startActivity(new Intent(MainActivity.this, ChangePassword.class));
         } else if (id == R.id.nav_logout) {
             RetrofitClient.clearToken();
-            updateNavigationMenu(); // Cập nhật menu sau khi đăng xuất
-//            startActivity(new Intent(this, LoginActivity.class));
-//            finish(); //không quay lại bằng nút back
+            Log.d("MainActivity", "Token sau khi xóa: " + RetrofitClient.getToken());
+            updateNavigationMenu();
+            showUserInfomation();
+            Toast.makeText(MainActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
+            Log.d("MainActivity", "Token after logout: " + RetrofitClient.getToken());
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
@@ -394,6 +398,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void updateNavigationMenu() {
         String token = RetrofitClient.getToken();
+        Log.d("MainActivity", "Token in updateNavigationMenu: " + (token != null ? token : "null"));
         MenuItem loginItem = navigationView.getMenu().findItem(R.id.nav_login);
         MenuItem logoutItem = navigationView.getMenu().findItem(R.id.nav_logout);
         MenuItem historyItem = navigationView.getMenu().findItem(R.id.nav_history);
@@ -402,7 +407,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MenuItem changePasswordItem = navigationView.getMenu().findItem(R.id.nav_change);
 
         if (token == null || token.isEmpty()) {
-            // Chưa đăng nhập: hiển thị nút đăng nhập, ẩn các nút khác
             loginItem.setVisible(true);
             logoutItem.setVisible(false);
             historyItem.setVisible(false);
@@ -410,7 +414,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             pointItem.setVisible(false);
             changePasswordItem.setVisible(false);
         } else {
-            // Đã đăng nhập: ẩn nút đăng nhập, hiển thị các nút khác
             loginItem.setVisible(false);
             logoutItem.setVisible(true);
             historyItem.setVisible(true);
@@ -418,6 +421,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             pointItem.setVisible(true);
             changePasswordItem.setVisible(true);
         }
+        navigationView.invalidate();
     }
 
     @Override
@@ -426,27 +430,43 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void showUserInfomation() {
-        if (isLoading) return; // Ngăn gọi lặp
+        if (isLoading) return;
         isLoading = true;
 
-        // Lấy token từ RetrofitClient
         String token = RetrofitClient.getToken();
         Log.d(TAG, "Token retrieved ở main: " + (token != null ? token : "null"));
-        if (token == null) {
-            Toast.makeText(this, "Token không tồn tại, vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+
+        // Lấy header của NavigationView
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        View headerView = navigationView.getHeaderView(0);
+        TextView txt_name = headerView.findViewById(R.id.txt_name);
+        TextView txt_email = headerView.findViewById(R.id.txt_email);
+        TextView txtDiemRank = headerView.findViewById(R.id.txtDiemRank);
+        TextView rankhientai = headerView.findViewById(R.id.rankhientai);
+
+        if (token == null || token.isEmpty()) {
+            // Trạng thái đăng xuất: Xóa hoặc ẩn thông tin người dùng
+            txt_name.setText("");
+            txt_name.setVisibility(View.GONE);
+            txt_email.setText("");
+            txt_email.setVisibility(View.GONE);
+            txtDiemRank.setText("");
+            txtDiemRank.setVisibility(View.GONE);
+            rankhientai.setText("");
+            rankhientai.setVisibility(View.GONE);
             isLoading = false;
             return;
         }
 
         // Gọi API để lấy thông tin người dùng
         ApiService api = RetrofitClient.api();
-        Call<User> call = api.getCurrentUser(); // <-- không truyền token
+        Call<User> call = api.getCurrentUser();
         call.enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 isLoading = false;
                 Log.d(TAG, "Response code ở MainActivity: " + response.code());
-                Log.d(TAG, "Request headers ở MainActivity: " + call.request().headers().toString()); // Log header gửi đi
+                Log.d(TAG, "Request headers ở MainActivity: " + call.request().headers().toString());
                 Log.d(TAG, "Response body ở MainActivity: " + (response.body() != null ? response.body().toString() : "null"));
                 String errorBodyStr = "null";
                 if (response.errorBody() != null) {
@@ -461,13 +481,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (response.isSuccessful() && response.body() != null) {
                     User user = response.body();
                     Log.d(TAG, "Thông tin người dùng từ API: " + user.getUserName());
-                    // Lấy các TextView từ nav_header
-                    NavigationView navigationView = findViewById(R.id.nav_view);
-                    View headerView = navigationView.getHeaderView(0);
-                    TextView txt_name = headerView.findViewById(R.id.txt_name);
-                    TextView txt_email = headerView.findViewById(R.id.txt_email);
-                    TextView txtDiemRank = headerView.findViewById(R.id.txtDiemRank);
-                    TextView rankhientai = headerView.findViewById(R.id.rankhientai);
 
                     // Hiển thị tên người dùng
                     String name = user.getUserName();
@@ -481,27 +494,43 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     // Hiển thị email người dùng
                     String email = user.getEmail();
                     if (email != null) {
+                        txt_email.setVisibility(View.VISIBLE);
                         txt_email.setText(email);
+                    } else {
+                        txt_email.setVisibility(View.GONE);
                     }
-
                     // Hiển thị điểm số người dùng
 //                    int diemTV = user.getDiemTV();
-//                    txtDiemRank.setText(String.valueOf(diemTV));
+//                    if (diemTV != null) {
+//                        txtDiemRank.setVisibility(View.VISIBLE);
+//                        txtDiemRank.setText(String.valueOf(diemTV));
+//                    } else {
+//                        txtDiemRank.setVisibility(View.GONE);
+//                    }
 //
 //                    // Hiển thị rank (giả sử User có getRankName() hoặc getRankId())
 //                    String rankName = user.getRankName();
-//                    if (rankName != null) {
-//                        rankhientai.setText(rankName);
+//                    if (diemTV != null) {
+//                        rankhientai.setVisibility(View.VISIBLE);
+//                        rankhientai.setText(String.valueOf(diemTV));
 //                    } else {
-//                        String rankId = user.getRankId();
-//                        if (rankId != null) {
-//                            loadRankFromApi(rankId, rankhientai);
-//                        } else {
-//                            rankhientai.setText("Unknown");
-//                        }
+//                        rankhientai.setVisibility(View.GONE);
 //                    }
+
+                    // Ẩn các trường chưa được triển khai
+                    txtDiemRank.setVisibility(View.GONE);
+                    rankhientai.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(MainActivity.this, "Lỗi ở MainActivity: " + response.code() + " - " + errorBodyStr, Toast.LENGTH_LONG).show();
+                    // Xóa thông tin nếu API thất bại
+                    txt_name.setText("");
+                    txt_name.setVisibility(View.GONE);
+                    txt_email.setText("");
+                    txt_email.setVisibility(View.GONE);
+                    txtDiemRank.setText("");
+                    txtDiemRank.setVisibility(View.GONE);
+                    rankhientai.setText("");
+                    rankhientai.setVisibility(View.GONE);
                 }
             }
 
@@ -510,6 +539,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 isLoading = false;
                 Toast.makeText(MainActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "Lỗi gọi API user/me: " + t.getMessage(), t);
+                // Xóa thông tin nếu API thất bại
+                txt_name.setText("");
+                txt_name.setVisibility(View.GONE);
+                txt_email.setText("");
+                txt_email.setVisibility(View.GONE);
+                txtDiemRank.setText("");
+                txtDiemRank.setVisibility(View.GONE);
+                rankhientai.setText("");
+                rankhientai.setVisibility(View.GONE);
             }
         });
     }
@@ -545,7 +583,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (response.isSuccessful() && response.body() != null) {
                     User user = response.body();
                     if ("ADMIN".equals(user.getRole())) {
-                        // Chuyển đến AdminMainActivity nếu là ADMIN
                         Intent intent = new Intent(MainActivity.this, AdminMainActivity.class);
                         startActivity(intent);
                     }
@@ -562,5 +599,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onResume() {
         super.onResume();
+        updateNavigationMenu();
+        showUserInfomation();
     }
 }

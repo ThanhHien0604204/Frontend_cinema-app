@@ -18,6 +18,9 @@
         android:theme="@style/Theme.Movieticketbookingapp"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <activity
+            android:name=".Activeties.VerifyOtpActivity"
+            android:exported="false" />
         <activity android:name=".Activeties.AdminMainActivity" />
         <activity android:name=".Activeties.QuanLyPhimActivity" />
         <activity android:name=".Activeties.QuanLyPhimDetailActivity" /> <!-- <activity -->
@@ -29,7 +32,7 @@
         <activity android:name=".Activeties.QuanLyRapActivity" />
         <activity android:name=".Activeties.QuanLyRapDetailActivity" /> <!-- <activity -->
         <activity android:name=".Activeties.QuanLySuatActivity" />
-         <activity android:name=".Activeties.QuanLySuatDetailActivity" />
+        <activity android:name=".Activeties.QuanLySuatDetailActivity" />
         <activity android:name=".Activeties.QuanLyNguoiDungActivity" />
         <activity android:name=".Activeties.QuanLyNguoiDungDetailActivity" />
         <activity
@@ -93,8 +96,7 @@
                     android:host="zp-callback"
                     android:scheme="myapp" />
             </intent-filter>
-        </activity>
-        <!-- Payment giữ logic polling, KHÔNG cần intent-filter -->
+        </activity> <!-- Payment giữ logic polling, KHÔNG cần intent-filter -->
         <activity
             android:name=".Activeties.PaymentActivity"
             android:launchMode="singleTop" />

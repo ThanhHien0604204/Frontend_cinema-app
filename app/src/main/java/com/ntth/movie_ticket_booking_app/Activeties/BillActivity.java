@@ -1,5 +1,6 @@
 package com.ntth.movie_ticket_booking_app.Activeties;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -44,6 +45,7 @@ public class BillActivity extends AppCompatActivity {
     private ImageView imgPoster, btnBack;
     private Button btnCancel;
     private ApiService apiService;
+    private boolean fromPayment = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,20 +58,40 @@ public class BillActivity extends AppCompatActivity {
         // Khởi tạo Retrofit API
         apiService = RetrofitClient.getInstance().create(ApiService.class);
 
-        String bookingId = getIntent().getStringExtra("bookingId");
+        //String bookingId = getIntent().getStringExtra("bookingId");
         // Lấy booking ID từ intent
-        //String bookingId = getIntent().getStringExtra(EXTRA_BOOKING_ID);
+        String bookingId = getIntent().getStringExtra(EXTRA_BOOKING_ID);
         if (bookingId == null || bookingId.isEmpty()) {
             Toast.makeText(this, "Thiếu mã đặt vé", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
+        // Kiểm tra extra để xác định luồng từ thanh toán
+        fromPayment = getIntent().getBooleanExtra("from_payment", false);
+
         // Gán sự kiện cho nút quay lại
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> handleBackNavigation());
 
         // Lấy và hiển thị chi tiết vé
         fetchTicketDetails(bookingId);
+    }
+//    @Override
+//    public void onBackPressed() {
+//        handleBackNavigation(); // Xử lý nút Back của thiết bị tương tự
+//    }
+
+    private void handleBackNavigation() {
+        if (fromPayment) {
+            // Nếu từ luồng thanh toán, quay về ShowtimeActivity và xóa các trang trung gian
+            Intent intent = new Intent(this, ShowtimeActivity.class); // Thay ShowtimeActivity bằng tên Activity thực tế của màn hình showtime
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        } else {
+            // Nếu từ các luồng khác (ví dụ: lịch sử vé), chỉ đóng BillActivity
+            finish();
+        }
     }
 
     private void mapViews() {
@@ -95,6 +117,7 @@ public class BillActivity extends AppCompatActivity {
                 if (!response.isSuccessful() || response.body() == null) {
                     Log.e("BillActivity", "getBooking failed: " + response.code());
                     Toast.makeText(BillActivity.this, "Không lấy được thông tin vé", Toast.LENGTH_LONG).show();
+                    finish();
                     return;
                 }
 
@@ -376,6 +399,7 @@ public class BillActivity extends AppCompatActivity {
             public void onFailure(Call<BookingResponse> call, Throwable t) {
                 Log.e("BillActivity", "getBooking failure: " + t.getMessage());
                 Toast.makeText(BillActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                finish();
             }
         });
     }
@@ -493,6 +517,7 @@ public class BillActivity extends AppCompatActivity {
             }
         });
     }
+
     // Method hủy vé
     private void cancelBooking(String bookingId) {
         Map<String, String> body = new HashMap<>();  // Body rỗng nếu không cần

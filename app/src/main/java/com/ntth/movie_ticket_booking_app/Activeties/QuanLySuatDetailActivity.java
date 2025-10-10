@@ -24,6 +24,7 @@ import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
 import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
 import com.ntth.movie_ticket_booking_app.dto.CreateShowtimeRequest;
 import com.ntth.movie_ticket_booking_app.dto.ShowtimeResponse;
+import com.ntth.movie_ticket_booking_app.dto.UpdateShowtimeRequest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -123,7 +124,8 @@ public class QuanLySuatDetailActivity extends AppCompatActivity {
         // Nút thêm
         btThemAdmin.setOnClickListener(v -> addSessionDetails());
 
-        // Nút sửbtSuaAdmin.setOnClickListener(v -> updateSessionDetails());
+        // Nút sửa
+        btSuaAdmin.setOnClickListener(v -> updateSessionDetails());
 
         // Nút xóa
         btXoaAdmin.setOnClickListener(v -> deleteSessionDetails());
@@ -349,63 +351,75 @@ public class QuanLySuatDetailActivity extends AppCompatActivity {
         });
     }
 
-    //    private void updateSessionDetails() {
-//        if (sessionId == null) {
-//            Toast.makeText(this, "Không tìm thấy suất chiếu!", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        String sessionName = edSessionName.getText().toString().trim();
-//        String movieId = movieMap.get(spPhim.getSelectedItem().toString());
-//        String roomId = roomMap.get(spPhong.getSelectedItem().toString());
-//        String priceStr = edGiaVe.getText().toString().trim();
-//        String startDate = btChonNgay.getText().toString().trim();
-//        String startTime = btChonGio.getText().toString().trim();
-//        String endTime = btChonGioHet.getText().toString().trim();
-//
-//        if (sessionName.isEmpty() || movieId == null || roomId == null || priceStr.isEmpty() ||
-//                startDate.isEmpty() || startTime.isEmpty() || endTime.isEmpty()) {
-//            Toast.makeText(this, "Vui lòng điền đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        Long price = Long.parseLong(priceStr);
-//
-//        LocalDate date = LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE);
-//        LocalTime startLocalTime = LocalTime.parse(startTime, DateTimeFormatter.ofPattern("HH:mm"));
-//        LocalTime endLocalTime = LocalTime.parse(endTime, DateTimeFormatter.ofPattern("HH:mm"));
-//        ZonedDateTime startZoned = ZonedDateTime.of(date, startLocalTime, ZoneId.systemDefault());
-//        ZonedDateTime endZoned = ZonedDateTime.of(date, endLocalTime, ZoneId.systemDefault());
-//        double startAt = startZoned.toInstant().toEpochMilli() / 1000.0;
-//        double endAt = endZoned.toInstant().toEpochMilli() / 1000.0;
-//
-//        CreateShowtimeRequest request = new CreateShowtimeRequest();
-//        request.setMovieId(movieId);
-//        request.setRoomId(roomId);
-//        request.setSessionName(sessionName);
-//        request.setDate(Arrays.asList(date.getYear(), date.getMonthValue(), date.getDayOfMonth()));
-//        request.setStartAt(startAt);
-//        request.setEndAt(endAt);
-//        request.setPrice(price);
-//
-//        apiService.updateShowtime(sessionId, request).enqueue(new Callback<ShowtimeResponse>() {
-//            @Override
-//            public void onResponse(Call<ShowtimeResponse> call, Response<ShowtimeResponse> response) {
-//                if (response.isSuccessful()) {
-//                    Toast.makeText(QuanLySuatDetailActivity.this, "Sửa thành công!", Toast.LENGTH_SHORT).show();
-//                    finish();
-//                } else {
-//                    Log.e("QuanLySuatDetail", "Error: " + response.code() + " - " + response.message());
-//                    Toast.makeText(QuanLySuatDetailActivity.this, "Lỗi sửa: " + response.message(), Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<ShowtimeResponse> call, Throwable t) {
-//                Toast.makeText(QuanLySuatDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//    }
+    private void updateSessionDetails() {
+        if (sessionId == null) {
+            Toast.makeText(this, "Không tìm thấy suất chiếu!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String sessionName = edSessionName.getText().toString().trim();
+        String movieId = movieMap.get(spPhim.getSelectedItem().toString());
+        String roomId = roomMap.get(spPhong.getSelectedItem().toString());
+        String priceStr = edGiaVe.getText().toString().trim();
+        String startDate = btChonNgay.getText().toString().trim();
+        String startTime = btChonGio.getText().toString().trim();
+        String endTime = btChonGioHet.getText().toString().trim();
+
+        if (sessionName.isEmpty() || movieId == null || roomId == null || priceStr.isEmpty() ||
+                startDate.isEmpty() || startTime.isEmpty() || endTime.isEmpty()) {
+            Toast.makeText(this, "Vui lòng điền đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Integer price;
+        try {
+            price = Integer.parseInt(priceStr);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Giá vé phải là số hợp lệ!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Định dạng ngày giờ theo yêu cầu backend
+        String date = startDate; // Đảm bảo định dạng "yyyy-MM-dd"
+        String formattedStartTime = startTime; // Đảm bảo "HH:mm"
+        String formattedEndTime = endTime;     // Đảm bảo "HH:mm"
+
+        // Giá trị mặc định cho totalSeats và availableSeats (cập nhật từ UI nếu có)
+        Integer totalSeats = 40; // Giả định, thay bằng logic thực tế
+        Integer availableSeats = 40; // Giả định, thay bằng logic thực tế
+
+        // Tạo đối tượng UpdateShowtimeRequest
+        UpdateShowtimeRequest request = new UpdateShowtimeRequest(
+                movieId,
+                roomId,
+                sessionName,
+                date,
+                formattedStartTime,
+                formattedEndTime,
+                price,
+                totalSeats,
+                availableSeats
+        );
+
+        apiService.updateShowtime(sessionId, request).enqueue(new Callback<Showtime>() {
+            @Override
+            public void onResponse(Call<Showtime> call, Response<Showtime> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(QuanLySuatDetailActivity.this, "Sửa thành công!", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    Log.e("QuanLySuatDetail", "Error: " + response.code() + " - " + response.message());
+                    Toast.makeText(QuanLySuatDetailActivity.this, "Lỗi sửa: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Showtime> call, Throwable t) {
+                Toast.makeText(QuanLySuatDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void deleteSessionDetails() {
         if (sessionId == null) {
             Toast.makeText(this, "Không tìm thấy suất chiếu để xóa!", Toast.LENGTH_SHORT).show();

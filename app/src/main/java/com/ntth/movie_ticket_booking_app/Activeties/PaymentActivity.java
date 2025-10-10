@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -26,6 +27,7 @@ import com.ntth.movie_ticket_booking_app.R;
 import com.ntth.movie_ticket_booking_app.data.remote.ApiService;
 import com.ntth.movie_ticket_booking_app.data.remote.RetrofitClient;
 import com.ntth.movie_ticket_booking_app.dto.BookingResponse;
+import com.ntth.movie_ticket_booking_app.dto.ConfirmResponse;
 import com.ntth.movie_ticket_booking_app.dto.HoldSeatsResponse;
 import com.ntth.movie_ticket_booking_app.dto.PageResponse;
 import com.ntth.movie_ticket_booking_app.dto.ZpCreateOrderResponse;
@@ -33,6 +35,7 @@ import com.ntth.movie_ticket_booking_app.dto.ZpCreateOrderResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -74,6 +77,9 @@ public class PaymentActivity extends AppCompatActivity {
     private String savedShowtimeId;
     private ArrayList<String> savedSeats;
     private boolean triedAutoConfirm = false;
+    private long orderOpenedAt = 0L;
+    private boolean allowAutoConfirm = false; // chỉ true khi quay về từ deeplink PENDING
+    private static final long AUTO_CONFIRM_GRACE_MS = 150000; // 150s
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -679,28 +685,24 @@ public class PaymentActivity extends AppCompatActivity {
                         }
 
                         ZpCreateOrderResponse zp = r2.body();
-                        String orderUrl = zp.getOrderUrl();
+                        String orderUrl = (zp != null) ? zp.getOrderUrl() : null;
 
                         if (orderUrl == null || orderUrl.isEmpty()) {
-                            showError("Không nhận được URL thanh toán");
-                            Log.e("PaymentActivity", "orderUrl is null/empty, response: " + zp);
-//                            openZpOrderUrl(orderUrl);
-//                            startPollingBooking();
+                            String errorBody = "";
+                            try { errorBody = r2.errorBody() != null ? r2.errorBody().string() : "No body"; } catch (Exception ignore) {}
+                            showError("Không nhận được URL thanh toán. Chi tiết: " + errorBody);
+                            Log.e("PaymentActivity", "orderUrl null/empty, resp=" + zp);
                             return;
-                        }else {
-                            showError("Không nhận được URL thanh toán từ backend (502). Kiểm tra log backend.");
-                            Log.e("PaymentActivity", "orderUrl is null, response: " + (res.body() != null ? res.body().toString() : "null"));
                         }
-
-                        Log.d("PaymentActivity", "FORCE OPEN WEB URL: " + orderUrl);
-
-                        // FORCE WEB URL - BỎ SDK HOÀN TOÀN
-                        launchZaloPayWebUrl(orderUrl);
+                        // ✅ Có URL → mở ZaloPay và bắt đầu polling
+                        Log.d("PaymentActivity", "Open ZaloPay (https): " + orderUrl);
+                        openZpOrderUrl(orderUrl);
                     }
 
                     @Override
                     public void onFailure(Call<ZpCreateOrderResponse> call, Throwable t) {
                         showError("Lỗi tạo đơn ZP: " + t.getMessage());
+                        Log.e("PaymentActivity", "createZpOrder onFailure", t);
                     }
                 });
             }
@@ -708,40 +710,42 @@ public class PaymentActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<BookingResponse> call, Throwable t) {
                 showError("Lỗi booking ZP: " + t.getMessage());
+                Log.e("PaymentActivity", "createBookingZaloPay onFailure", t);
             }
         });
     }
 
-    private void launchZaloPayWebUrl(String orderUrl) {
-        Log.d("PaymentActivity", "=== LAUNCH ZALOPAY WEB ===");
-        Log.d("PaymentActivity", "URL: " + orderUrl);
-
-        try {
-            // 1. THỬ ZALOPAY APP SCHEME
-            String queryParams = orderUrl.contains("?") ? orderUrl.split("\\?")[1] : "";
-            Uri zaloPayUri = Uri.parse("zalopay://pay?" + queryParams);
-            Intent zaloPayIntent = new Intent(Intent.ACTION_VIEW, zaloPayUri);
-            zaloPayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            if (zaloPayIntent.resolveActivity(getPackageManager()) != null) {
-                Log.d("PaymentActivity", "Opening ZaloPay app scheme");
-                startActivity(zaloPayIntent);
-            } else {
-                Log.d("PaymentActivity", "ZaloPay app not found, using web");
-                openWebBrowser(orderUrl);
-            }
-
-            // START POLLING NGAY Cả app scheme và web
-            startPollingBooking();
-            Toast.makeText(this, "Đang chuyển đến ZaloPay...", Toast.LENGTH_SHORT).show();
-
-        } catch (Exception e) {
-            Log.e("PaymentActivity", "ZaloPay launch failed", e);
-            // FINAL FALLBACK: WEB BROWSER
-            openWebBrowser(orderUrl);
-            startPollingBooking();
-        }
-    }
+//    private void launchZaloPayWebUrl(String orderUrl) {
+//        Log.d("PaymentActivity", "=== LAUNCH ZALOPAY WEB ===");
+//        Log.d("PaymentActivity", "URL: " + orderUrl);
+//
+//        try {
+//            // 1. THỬ ZALOPAY APP SCHEME
+//            String queryParams = orderUrl.contains("?") ? orderUrl.split("\\?")[1] : "";
+//            Uri zaloPayUri = Uri.parse("zalopay://pay?" + queryParams);
+//            Intent zaloPayIntent = new Intent(Intent.ACTION_VIEW, zaloPayUri);
+//            zaloPayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//
+//            if (zaloPayIntent.resolveActivity(getPackageManager()) != null) {
+//                Log.d("PaymentActivity", "Opening ZaloPay app scheme");
+//                startActivity(zaloPayIntent);
+//            } else {
+//                Log.d("PaymentActivity", "ZaloPay app not found, using web");
+//                openWebBrowser(orderUrl);
+//            }
+//
+//            // START POLLING NGAY Cả app scheme và web
+//            startPollingBooking();
+//            startPollingBooking();
+//            Toast.makeText(this, "Đang chuyển đến ZaloPay...", Toast.LENGTH_SHORT).show();
+//
+//        } catch (Exception e) {
+//            Log.e("PaymentActivity", "ZaloPay launch failed", e);
+//            // FINAL FALLBACK: WEB BROWSER
+//            openWebBrowser(orderUrl);
+//            startPollingBooking();
+//        }
+//    }
 
     private void openWebBrowser(String orderUrl) {
         try {
@@ -769,10 +773,11 @@ public class PaymentActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
-        Intent it = getIntent();
-        if (it != null && it.getBooleanExtra("pending", false)) {
-            String id = it.getStringExtra("bookingId");
-            if (id != null) startPollingBooking(id); // overload có tham số
+        if (getIntent().getBooleanExtra("pending", false)) {
+            allowAutoConfirm = true;
+            String id = getIntent().getStringExtra("bookingId");
+            if (id != null) this.bookingId = id;
+            startPollingBooking();
         }
     }
 
@@ -799,7 +804,10 @@ public class PaymentActivity extends AppCompatActivity {
 //                    navigateToBillActivity();
 //                    return;
 //                }
-//
+//                if ("PENDING".equalsIgnoreCase(status)) { // cho phép auto-confirm
+//                    allowAutoConfirm = true;
+//                    startPollingBooking(); // poll tiếp, sẽ confirm ở bước 3
+//                }
 //                // CANCELED → ERROR
 //                String canceled = data.getQueryParameter("canceled");
 //                if (canceled != null && ("1".equals(canceled) || "true".equals(canceled))) {
@@ -808,9 +816,6 @@ public class PaymentActivity extends AppCompatActivity {
 //                    finish();
 //                    return;
 //                }
-//
-//                // FALLBACK: Start polling
-//                startPollingBooking();
 //            }
 //        }
 //    }
@@ -860,7 +865,7 @@ public class PaymentActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<BookingResponse> call, Response<BookingResponse> res) {
                     if (!isPolling) {
-                        Log.w("PaymentActivity", "Polling aborted: isPolling=false");
+                        Log.w("PaymentActivity", "Cuộc thăm dò đã bị hủy bỏ: isPolling=false");
                         return;
                     }
 
@@ -882,33 +887,27 @@ public class PaymentActivity extends AppCompatActivity {
 
                         // PENDING_PAYMENT → CONTINUE POLLING
                         if ("PENDING_PAYMENT".equalsIgnoreCase(currentStatus)) {
-                            Log.d("PaymentActivity", "Still PENDING_PAYMENT - waiting for IPN...");
-//                            if (!triedAutoConfirm) {
-//                                triedAutoConfirm = true;
-//                                // Gọi confirm ngay 1 lần
-//                                Map<String, Object> emptyBody = new HashMap<>(); // nếu API không cần body
-//                                api.confirmBooking(bookingId, emptyBody).enqueue(new Callback<ConfirmResponse>() {
-//                                    @Override
-//                                    public void onResponse(Call<ConfirmResponse> call, Response<ConfirmResponse> r) {
-//                                        if (r.isSuccessful() && r.body() != null && r.body().success) {
-//                                            // Đã confirm → điều hướng luôn
-//                                            stopPolling();
-//                                            showMessage("Thanh toán thành công!");
-//                                            navigateToBillActivity();
-//                                        } else {
-//                                            // Vẫn chưa confirm được → tiếp tục polling
-//                                            scheduleNextRun();
-//                                        }
-//                                    }
-//                                    @Override
-//                                    public void onFailure(Call<ConfirmResponse> call, Throwable t) {
-//                                        // Lỗi mạng → tiếp tục polling
-//                                        scheduleNextRun();
-//                                    }
-//                                });
-//                                return;
-//                            }
-                            // Đã thử confirm 1 lần rồi → tiếp tục polling cho tới khi IPN tới
+                            long elapsed = System.currentTimeMillis() - orderOpenedAt;
+
+                            // Chỉ auto-confirm nếu:
+                            // 1) đã qua grace time (>= 15s) và chưa thử lần nào, hoặc
+                            // 2) allowAutoConfirm == true (tức đã quay về deeplink status=PENDING)
+                            if (!triedAutoConfirm && (elapsed >= AUTO_CONFIRM_GRACE_MS || allowAutoConfirm)) {
+                                triedAutoConfirm = true;
+                                api.confirmBooking(bookingId, Collections.emptyMap()).enqueue(new Callback<BookingResponse>() {
+                                    @Override public void onResponse(Call<BookingResponse> c, Response<BookingResponse> r) {
+                                        if (r.isSuccessful() && r.body()!=null && "CONFIRMED".equalsIgnoreCase(r.body().getStatus())) {
+                                            stopPolling();
+                                            navigateToBillActivity();
+                                        } else {
+                                            scheduleNextRun();
+                                        }
+                                    }
+                                    @Override public void onFailure(Call<BookingResponse> c, Throwable t) { scheduleNextRun(); }
+                                });
+                                return;
+                            }
+
                             scheduleNextRun();
                             return;
                         }
@@ -958,11 +957,17 @@ public class PaymentActivity extends AppCompatActivity {
             });
         }
     };
-    private void openZpOrderUrl(String orderUrl) {
+    private void openZpOrderUrl(@NonNull String orderUrl) {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(orderUrl));
             startActivity(intent);
             Log.d("PaymentActivity", "Opened ZaloPay with orderUrl: " + orderUrl);
+
+            // đánh dấu thời điểm mở + bắt đầu polling
+            orderOpenedAt = System.currentTimeMillis();
+            triedAutoConfirm = false;
+            allowAutoConfirm = false;
+            startPollingBooking(); // bản không tham số, dùng field bookingId
         } catch (Exception e) {
             showError("Không mở được ZaloPay: " + e.getMessage());
             Log.e("PaymentActivity", "Failed to open orderUrl: " + orderUrl, e);

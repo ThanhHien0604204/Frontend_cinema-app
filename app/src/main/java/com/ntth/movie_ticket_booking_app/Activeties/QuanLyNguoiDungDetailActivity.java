@@ -139,7 +139,6 @@ public class QuanLyNguoiDungDetailActivity extends AppCompatActivity {
         if (!password.isEmpty()) {
             updatedUser.setPassword(password);
         }
-        // Xóa dòng này: updatedUser.setPhone(editPhone.getText().toString().trim());
         updatedUser.setRole(spinnerUserRole.getSelectedItem().toString());
 
         apiService.updateUser(userId, updatedUser).enqueue(new Callback<User>() {

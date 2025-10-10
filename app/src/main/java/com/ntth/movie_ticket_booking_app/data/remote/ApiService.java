@@ -14,6 +14,7 @@ import com.ntth.movie_ticket_booking_app.dto.BookingRequest;
 import com.ntth.movie_ticket_booking_app.dto.BookingResponse;
 import com.ntth.movie_ticket_booking_app.dto.AuthToken;
 import com.ntth.movie_ticket_booking_app.dto.ChangePasswordRequest;
+import com.ntth.movie_ticket_booking_app.dto.ConfirmResponse;
 import com.ntth.movie_ticket_booking_app.dto.CreateShowtimeRequest;
 import com.ntth.movie_ticket_booking_app.dto.ForgotPasswordRequest;
 import com.ntth.movie_ticket_booking_app.dto.HoldSeatsRequest;
@@ -29,6 +30,7 @@ import com.ntth.movie_ticket_booking_app.dto.ReviewRequest;
 import com.ntth.movie_ticket_booking_app.dto.ReviewResponse;
 import com.ntth.movie_ticket_booking_app.dto.SeatResponse;
 import com.ntth.movie_ticket_booking_app.dto.ShowtimeResponse;
+import com.ntth.movie_ticket_booking_app.dto.UpdateShowtimeRequest;
 import com.ntth.movie_ticket_booking_app.dto.UpdateUserRequest;
 import com.ntth.movie_ticket_booking_app.dto.ZpCreateOrderResponse;
 
@@ -126,8 +128,7 @@ public interface ApiService {
     @POST("/api/register")
     Call<ResponseBody> register(@Body RegisterRequest request);
     // Quên mật khẩu
-    @POST("/api/forgot-password")
-    Call<Void> forgotPassword(@Body ForgotPasswordRequest request);
+
     // Lấy thông tin người dùng hiện tại
     @GET("/api/user/me")
     Call<User> getCurrentUser();  // <-- không cần @Header nữa
@@ -142,15 +143,12 @@ public interface ApiService {
     Call<Void> changePassword(@Body ChangePasswordRequest body);
 
     // B1: Gửi yêu cầu reset password
-    @POST("api/forgot-password")
-    Call<ResponseBody> forgotPassword(
-            @Body ForgotPasswordRequest request,
-            @Header("X-App-Base-Url") String baseUrl
-    );
+    // ApiService.java
+    @POST("/api/forgot-password")
+    Call<String> forgotPassword(@Body ForgotPasswordRequest request);
 
-    // B2: Reset password với token
-    @POST("api/reset-password")
-    Call<ResetPasswordResponse> resetPassword(@Body ResetPasswordRequest request);
+    @POST("/api/reset-password")
+    Call<String> resetPassword(@Body ResetPasswordRequest request);
 
     //Rank
     @GET("/api/ranks/{id}")
@@ -165,6 +163,9 @@ public interface ApiService {
 
     @POST("/api/cinemas")
     Call<Cinema> addCinema(@Body Cinema cinema);
+
+    @PUT("/api/cinemas/{id}")
+    Call<Cinema> updateCinema(@Path("id") String id, @Body Cinema cinema);
 
     @DELETE("/api/cinemas/{id}")
     Call<Void> deleteCinema(@Path("id") String id);
@@ -199,7 +200,7 @@ public interface ApiService {
     Call<ShowtimeResponse> createShowtime(@Body CreateShowtimeRequest request);
 
     @PUT("/api/showtimes/{id}")
-    Call<Showtime> updateShowtime(@Path("id") String id, @Body Showtime showtime);
+    Call<Showtime> updateShowtime(@Path("id") String id, @Body UpdateShowtimeRequest showtime);
 
     @DELETE("/api/showtimes/{id}")
     Call<Void> deleteShowtime(@Path("id") String id);
@@ -282,7 +283,7 @@ public interface ApiService {
     Call<BookingResponse> getBooking(@Path("id") String bookingId);
 
     @POST("/api/bookings/{id}/confirm")
-    Call<BookingResponse> confirmBooking(@Path("id") String id, @Body Map<String, Object> body);
+    Call<BookingResponse> confirmBooking(@Path("id") String bookingId, @Body Map<String,Object> body);
 
     @POST("/api/bookings/momo")
     Call<BookingResponse> createBookingMoMo(@Body Map<String, String> body); // {holdId}

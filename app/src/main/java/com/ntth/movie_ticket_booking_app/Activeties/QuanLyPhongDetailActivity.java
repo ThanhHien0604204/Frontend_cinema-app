@@ -72,7 +72,7 @@ public class QuanLyPhongDetailActivity extends AppCompatActivity {
         }
 
         btThemAdmin.setOnClickListener(v -> addRoom());
-        //btSuaAdmin.setOnClickListener(v -> updateRoom());
+        btSuaAdmin.setOnClickListener(v -> updateRoom());
         btXoaAdmin.setOnClickListener(v -> deleteRoom());
 
         ImageView imBack = findViewById(R.id.imBack);
@@ -204,61 +204,67 @@ public class QuanLyPhongDetailActivity extends AppCompatActivity {
         }
     }
 
-//    private void updateRoom() {
-//        String roomName = editTenPhong.getText().toString().trim();
-//        String totalSeatsStr = editSoGhe.getText().toString().trim();
-//        String columnsStr = editSoCot.getText().toString().trim();
-//        String rowsStr = editSoHang.getText().toString().trim();
-//
-//        if (roomName.isEmpty() || totalSeatsStr.isEmpty() || columnsStr.isEmpty() || rowsStr.isEmpty()) {
-//            Toast.makeText(this, "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        try {
-//            int totalSeats = Integer.parseInt(totalSeatsStr);
-//            int columns = Integer.parseInt(columnsStr);
-//            int rows = Integer.parseInt(rowsStr);
-//
-//            if (totalSeats <= 0 || columns <= 0 || rows <= 0) {
-//                Toast.makeText(this, "Số ghế, cột, hàng phải lớn hơn 0", Toast.LENGTH_SHORT).show();
-//                return;
-//            }
-//
-//            String cinemaId = locationMap.get(spChonRap.getSelectedItem().toString());
-//            if (cinemaId == null) {
-//                Toast.makeText(this, "Vui lòng chọn rạp hợp lệ", Toast.LENGTH_SHORT).show();
-//                return;
-//            }
-//
-//            Room updatedRoom = new Room();
-//            updatedRoom.setId(roomId);
-//            updatedRoom.setRoomName(roomName);
-//            updatedRoom.setTotalSeats(totalSeats);
-//            updatedRoom.setColumns(columns);
-//            updatedRoom.setRows(rows);
-//            updatedRoom.setCinemaId(cinemaId);
-//
-//            apiService.updateRoom(roomId, updatedRoom).enqueue(new Callback<Room>() {
-//                @Override
-//                public void onResponse(Call<Room> call, Response<Room> response) {
-//                    if (response.isSuccessful()) {
-//                        Toast.makeText(QuanLyPhongDetailActivity.this, "Sửa phòng thành công", Toast.LENGTH_SHORT).show();
-//                        finish();
-//                    } else {
-//                        Toast.makeText(QuanLyPhongDetailActivity.this, "Lỗi sửa phòng: " + response.message(), Toast.LENGTH_SHORT).show();
-//                    }
-//                }
-//
-//                @Override
-//                public void onFailure(Call<Room> call, Throwable t) {
-//                    Toast.makeText(QuanLyPhongDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//        } catch (NumberFormatException e) {
-//            Toast.makeText(this, "Vui lòng nhập số hợp lệ cho ghế, cột, hàng", Toast.LENGTH_SHORT).show();
-//        }
-//    }
+    private void updateRoom() {
+        String roomName = editTenPhong.getText().toString().trim();
+        String totalSeatsStr = editSoGhe.getText().toString().trim();
+        String columnsStr = editSoCot.getText().toString().trim();
+        String rowsStr = editSoHang.getText().toString().trim();
+
+        if (roomName.isEmpty() || totalSeatsStr.isEmpty() || columnsStr.isEmpty() || rowsStr.isEmpty()) {
+            Toast.makeText(this, "Vui lòng điền đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            int totalSeats = Integer.parseInt(totalSeatsStr);
+            int columns = Integer.parseInt(columnsStr);
+            int rows = Integer.parseInt(rowsStr);
+
+            if (totalSeats <= 0 || columns <= 0 || rows <= 0) {
+                Toast.makeText(this, "Số ghế, cột, hàng phải lớn hơn 0", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Kiểm tra tổng số ghế phải bằng rows * columns
+            if (totalSeats != rows * columns) {
+                Toast.makeText(this, "Tổng số ghế phải bằng số hàng * số cột", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String cinemaId = locationMap.get(spChonRap.getSelectedItem().toString());
+            if (cinemaId == null) {
+                Toast.makeText(this, "Vui lòng chọn rạp hợp lệ", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Room updatedRoom = new Room();
+            updatedRoom.setId(roomId);
+            updatedRoom.setRoomName(roomName);
+            updatedRoom.setTotalSeats(totalSeats);
+            updatedRoom.setColumns(columns);
+            updatedRoom.setRows(rows);
+            updatedRoom.setCinemaId(cinemaId);
+
+            apiService.updateRoom(roomId, updatedRoom).enqueue(new Callback<Room>() {
+                @Override
+                public void onResponse(Call<Room> call, Response<Room> response) {
+                    if (response.isSuccessful()) {
+                        Toast.makeText(QuanLyPhongDetailActivity.this, "Sửa phòng thành công", Toast.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        Toast.makeText(QuanLyPhongDetailActivity.this, "Lỗi sửa phòng: " + response.message(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Room> call, Throwable t) {
+                    Toast.makeText(QuanLyPhongDetailActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Vui lòng nhập số hợp lệ cho ghế, cột, hàng", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void deleteRoom() {
         if (roomId == null) {

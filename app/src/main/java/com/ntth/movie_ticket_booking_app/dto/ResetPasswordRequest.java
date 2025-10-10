@@ -1,19 +1,24 @@
 package com.ntth.movie_ticket_booking_app.dto;
 
 public class ResetPasswordRequest {
-    private String token;
+    private String Otp;
     private String newPassword;
     private String confirmNewPassword;
 
-    public ResetPasswordRequest(String token, String newPassword, String confirmNewPassword) {
-        this.token = token;
+    public ResetPasswordRequest(String Otp, String newPassword, String confirmNewPassword) {
+        this.Otp =Otp;
         this.newPassword = newPassword;
         this.confirmNewPassword = confirmNewPassword;
     }
 
     // Getters & Setters
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+
+    public String getOtp() {
+        return Otp;
+    }
+    public void setOtp(String otp) {
+        Otp = otp;
+    }
     public String getNewPassword() { return newPassword; }
     public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
     public String getConfirmNewPassword() { return confirmNewPassword; }
