@@ -12,17 +12,17 @@ public class UpdateShowtimeRequest {
     @SerializedName("sessionName")
     private String sessionName;
 
-    @SerializedName("date")
-    private String date; // "yyyy-MM-dd"
+    @SerializedName("date")        // "yyyy-MM-dd"
+    private String date;
 
-    @SerializedName("startTime")
-    private String startTime; // "HH:mm"
+    @SerializedName("startTime")     // ⬅️ đổi tên key đúng backend
+    private String startTime;        // "HH:mm"
 
-    @SerializedName("endTime")
-    private String endTime; // "HH:mm"
+    @SerializedName("endTime")       // ⬅️ đổi tên key đúng backend
+    private String endTime;          // "HH:mm"
 
     @SerializedName("price")
-    private Integer price;
+    private Long price;            // ⬅️ dùng Long an toàn hơn
 
     @SerializedName("totalSeats")
     private Integer totalSeats;
@@ -30,58 +30,43 @@ public class UpdateShowtimeRequest {
     @SerializedName("availableSeats")
     private Integer availableSeats;
 
-    // Constructor mặc định
-    public UpdateShowtimeRequest() {}
-
-    // Constructor đầy đủ
-    public UpdateShowtimeRequest(String movieId, String roomId, String sessionName, String date,
-                                 String startTime, String endTime, Integer price,
-                                 Integer totalSeats, Integer availableSeats) {
+    public UpdateShowtimeRequest(String movieId, String roomId, String sessionName,
+                                 String date, String startAt, String endAt,
+                                 Long price, Integer totalSeats, Integer availableSeats) {
         this.movieId = movieId;
         this.roomId = roomId;
         this.sessionName = sessionName;
         this.date = date;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.startTime = startAt;
+        this.endTime = endAt;
         this.price = price;
         this.totalSeats = totalSeats;
         this.availableSeats = availableSeats;
     }
 
-    // Getter (bắt buộc cho Gson/Retrofit)
-    public String getMovieId() {
-        return movieId;
-    }
-
-    public String getRoomId() {
-        return roomId;
-    }
-
-    public String getSessionName() {
-        return sessionName;
-    }
-
-    public String getDate() {
-        return date;
-    }
+    // Getters
+    public String getMovieId() { return movieId; }
+    public String getRoomId() { return roomId; }
+    public String getSessionName() { return sessionName; }
+    public String getDate() { return date; }
 
     public String getStartTime() {
         return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
     }
 
     public String getEndTime() {
         return endTime;
     }
 
-    public Integer getPrice() {
-        return price;
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 
-    public Integer getTotalSeats() {
-        return totalSeats;
-    }
-
-    public Integer getAvailableSeats() {
-        return availableSeats;
-    }
+    public Long getPrice() { return price; }
+    public Integer getTotalSeats() { return totalSeats; }
+    public Integer getAvailableSeats() { return availableSeats; }
 }

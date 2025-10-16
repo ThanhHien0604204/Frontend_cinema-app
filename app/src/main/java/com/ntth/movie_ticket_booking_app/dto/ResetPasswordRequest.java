@@ -1,12 +1,14 @@
 package com.ntth.movie_ticket_booking_app.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ResetPasswordRequest {
-    private String Otp;
-    private String newPassword;
-    private String confirmNewPassword;
+    @SerializedName("otp") public String otp;
+    @SerializedName("newPassword") public String newPassword;
+    @SerializedName("confirmNewPassword") public String confirmNewPassword;
 
     public ResetPasswordRequest(String Otp, String newPassword, String confirmNewPassword) {
-        this.Otp =Otp;
+        this.otp =Otp;
         this.newPassword = newPassword;
         this.confirmNewPassword = confirmNewPassword;
     }
@@ -14,10 +16,10 @@ public class ResetPasswordRequest {
     // Getters & Setters
 
     public String getOtp() {
-        return Otp;
+        return otp;
     }
     public void setOtp(String otp) {
-        Otp = otp;
+        otp = otp;
     }
     public String getNewPassword() { return newPassword; }
     public void setNewPassword(String newPassword) { this.newPassword = newPassword; }

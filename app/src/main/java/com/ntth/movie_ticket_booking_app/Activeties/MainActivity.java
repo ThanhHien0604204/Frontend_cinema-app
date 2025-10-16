@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         checkUserRole();
         showUserInfomation();
 
+
         drawerLayout = findViewById(R.id.main);
         navigationView = findViewById(R.id.nav_view);
         backgroundImageView = findViewById(R.id.backgroundImageView);
@@ -216,6 +217,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
             return false;
         });
+        updateNavigationMenu();
     }
 
     private void handleNavigation(int id) {

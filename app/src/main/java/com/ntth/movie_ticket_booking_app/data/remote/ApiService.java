@@ -145,10 +145,10 @@ public interface ApiService {
     // B1: Gửi yêu cầu reset password
     // ApiService.java
     @POST("/api/forgot-password")
-    Call<String> forgotPassword(@Body ForgotPasswordRequest request);
+    Call<Void> forgotPassword(@Body ForgotPasswordRequest request);
 
     @POST("/api/reset-password")
-    Call<String> resetPassword(@Body ResetPasswordRequest request);
+    Call<Void> resetPassword(@Body ResetPasswordRequest request);
 
     //Rank
     @GET("/api/ranks/{id}")

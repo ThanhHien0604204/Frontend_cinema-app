@@ -94,7 +94,7 @@
 
             <Spinner
                 android:id="@+id/spPhong"
-                android:layout_width="230dp"
+                android:layout_width="220dp"
                 android:layout_height="40dp"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp"
@@ -120,7 +120,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/edit_text_rounded"
                 android:ems="10"
-                android:hint="Tên"
+                android:hint="Tên suất"
                 android:inputType="text" />
         </LinearLayout>
 

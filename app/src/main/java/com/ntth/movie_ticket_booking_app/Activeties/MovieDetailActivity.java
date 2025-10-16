@@ -40,6 +40,7 @@ import com.ntth.movie_ticket_booking_app.dto.MovieRatingSummary;
 import com.ntth.movie_ticket_booking_app.dto.PageResponse;
 import com.ntth.movie_ticket_booking_app.dto.ReviewResponse;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +103,7 @@ public class MovieDetailActivity extends AppCompatActivity {
 
         recyclerViewReviews.setLayoutManager(new LinearLayoutManager(this));
         reviewList = new ArrayList<>();
-        reviewAdapter = new ReviewAdapter(this, reviewList);
+        reviewAdapter = new ReviewAdapter(this, reviewList,false);
         recyclerViewReviews.setAdapter(reviewAdapter);
 
         // Lấy movieId từ Intent (từ onClick ở adapter)
@@ -146,25 +147,65 @@ public class MovieDetailActivity extends AppCompatActivity {
         if (movieId != null) {
             fetchMovieDetailsFromApi(movieId);  // Mới: Lấy từ API Retrofit
             checkIfUserHasWatchedMovie(movieId);
+            fetchReviewsFromApi(movieId);
+            updateMovieRating(movieId);
         } else {
             movieTitleTextView.setText("Không tìm thấy ID phim.");
         }
         // Xử lý sự kiện khi nhấn nút Rate and Review
         rateReviewButton.setOnClickListener(v -> {
-            // Lấy token từ SharedPreferences
             SharedPreferences prefsInner = getSharedPreferences("auth_pref", MODE_PRIVATE);
             String tokenInner = prefsInner.getString("jwt", null);
+            Log.d("MovieDetail", "Token: " + (tokenInner != null ? tokenInner.substring(0, 10) + "..." : "null"));
             if (tokenInner == null) {
                 Toast.makeText(MovieDetailActivity.this, "Vui lòng đăng nhập để đánh giá", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(MovieDetailActivity.this, LoginActivity.class));
                 return;
             }
 
-            if (hasWatchedMovie) {
-                ReviewDialogFragment reviewDialog = new ReviewDialogFragment(movieId);
-                reviewDialog.show(getSupportFragmentManager(), "reviewDialog");
-            } else {
+            if (!hasWatchedMovie) {
                 showWatchedMovieRequiredMessage();
+            } else {
+                // Kiểm tra xem người dùng đã viết đánh giá chưa
+                api.getMyReviewForMovie(movieId).enqueue(new Callback<ReviewResponse>() {
+                    @Override
+                    public void onResponse(Call<ReviewResponse> call, Response<ReviewResponse> response) {
+                        Log.d("MovieDetail", "getMyReview response code: " + response.code() + ", message: " + response.message());
+                        if (response.code() == 401) {
+                            // Token hết hạn, logout
+                            RetrofitClient.clearToken();
+                            Toast.makeText(MovieDetailActivity.this, "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại", Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(MovieDetailActivity.this, LoginActivity.class));
+                            finish();
+                            return;
+                        }
+                        if (response.isSuccessful()) {
+                            Log.d("MovieDetail", "Response successful, body: " + (response.body() != null ? response.body().toString() : "null"));
+                            if (response.body() != null) {
+                                // Đã có đánh giá
+                                showAlreadyReviewedMessage();
+                            } else {
+                                // Chưa có đánh giá (có thể 204 No Content, nhưng nếu code 200 và body null, log để debug)
+                                ReviewDialogFragment reviewDialog = new ReviewDialogFragment(movieId);
+                                reviewDialog.show(getSupportFragmentManager(), "reviewDialog");
+                            }
+                        } else {
+                            Log.e("MovieDetail", "Response not successful: " + response.code());
+                            try {
+                                Log.e("MovieDetail", "Error body: " + response.errorBody().string());
+                            } catch (IOException e) {
+                                Log.e("MovieDetail", "Error reading errorBody: " + e.getMessage());
+                            }
+                            Toast.makeText(MovieDetailActivity.this, "Lỗi kiểm tra đánh giá: " + response.message(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ReviewResponse> call, Throwable t) {
+                        Log.e("MovieDetail", "getMyReview failure: " + t.getMessage(), t);
+                        Toast.makeText(MovieDetailActivity.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         buyTicketButton.setOnClickListener(v -> {
@@ -205,13 +246,28 @@ public class MovieDetailActivity extends AppCompatActivity {
     private void onBackPressedCustom() {
         finish(); // Quay về activity trước đó
     }
+    private void showAlreadyReviewedMessage() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialogStyle);
+        builder.setTitle("Thông báo")
+                .setMessage("Bạn đã viết đánh giá rồi!")
+                .setPositiveButton("Xác nhận", (dialog, which) -> dialog.dismiss());
 
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+    }
     private void showWatchedMovieRequiredMessage() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomAlertDialogStyle);
         builder.setTitle("Thông báo")
                 .setMessage("Bạn cần xem phim này trước khi đánh giá.")
-                .setPositiveButton("OK", null)
-                .show();
+                .setPositiveButton("Xác nhận", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Tùy chỉnh nút "Xác nhận" thành màu đỏ
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(android.R.color.holo_red_dark));
     }
 //    private void setupRateAndReviewButton(String movieId) {
 //        rateReviewButton.setOnClickListener(v -> {
@@ -251,8 +307,9 @@ private void checkIfUserHasWatchedMovie(String movieId) {
         public void onResponse(Call<List<Ticket>> call, Response<List<Ticket>> response) {
             if (response.isSuccessful() && response.body() != null) {
                 List<Ticket> tickets = response.body();
-                hasWatchedMovie = !tickets.isEmpty() &&
-                        tickets.stream().anyMatch(t -> "CONFIRMED".equals(t.getStatus()));
+                Log.d("WatchedCheck", "Tickets: " + tickets);
+                hasWatchedMovie = !tickets.isEmpty() && tickets.stream().anyMatch(t -> "CONFIRMED".equals(t.getStatus()));
+                Log.d("WatchedCheck", "hasWatchedMovie: " + hasWatchedMovie);
             } else {
                 Log.e("WatchedCheck", "Response error: " + response.code());
                 hasWatchedMovie = false;
@@ -268,18 +325,13 @@ private void checkIfUserHasWatchedMovie(String movieId) {
         }
     });
 }
-
     private void updateReviewButtonState() {
         runOnUiThread(() -> {
-            if (hasWatchedMovie) {
-                rateReviewButton.setText("Đánh giá");
-                rateReviewButton.setEnabled(true);
-            } else {
-                rateReviewButton.setText("Đánh giá");//chưa xem phim
-                rateReviewButton.setEnabled(false);
-            }
+            rateReviewButton.setText("Đánh giá");
+            rateReviewButton.setEnabled(true); // Luôn cho phép nhấn để kiểm tra logic
         });
     }
+
     private void handleApiResponse(Response<?> response) {
         if (response.code() == 401) {
             RetrofitClient.clearToken();

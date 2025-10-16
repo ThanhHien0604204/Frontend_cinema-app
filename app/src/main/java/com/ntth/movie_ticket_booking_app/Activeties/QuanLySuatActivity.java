@@ -42,6 +42,7 @@ public class QuanLySuatActivity extends AppCompatActivity {
     private Map<String, String> movieIdToTitleMap = new HashMap<>(); // movieId -> movieTitle
     private Map<String, String> roomIdToNameMap = new HashMap<>(); // roomId -> roomName
     private ApiService apiService;
+    private static final int REQUEST_CODE_DETAIL = 1;
 
     private Map<String, String> roomToCinemaMap = new HashMap<>(); // roomId -> cinemaName
 
@@ -65,7 +66,7 @@ public class QuanLySuatActivity extends AppCompatActivity {
         // Nút thêm mới
         imAdd.setOnClickListener(v -> {
             Intent intent = new Intent(this, QuanLySuatDetailActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
         });
 
         // Tìm kiếm
@@ -93,7 +94,7 @@ public class QuanLySuatActivity extends AppCompatActivity {
             intent.putExtra("MoviePrice", selectedSession.getPrice());
             intent.putExtra("StartDay", selectedSession.getStartAt()); // Assume string
             // Thêm các trường khác nếu cần, ví dụ roomId, cinema from map
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_DETAIL);
         });
     }
 
@@ -253,6 +254,14 @@ public class QuanLySuatActivity extends AppCompatActivity {
     private void filter(String query) {
         if (adapter != null) {
             adapter.getFilter().filter(query);
+        }
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        System.out.println("onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
+        if (requestCode == REQUEST_CODE_DETAIL && resultCode == RESULT_OK) {
+            loadSessions();
         }
     }
 }

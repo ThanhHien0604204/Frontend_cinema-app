@@ -33,7 +33,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="335dp"
             android:layout_height="60dp"
-            android:layout_marginLeft="50dp"
+            android:layout_marginLeft="40dp"
             android:layout_marginTop="50dp"
             android:layout_marginRight="40dp">
 
@@ -50,7 +50,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="335dp"
             android:layout_height="60dp"
-            android:layout_marginLeft="50dp"
+            android:layout_marginLeft="40dp"
             android:layout_marginTop="50dp"
             android:layout_marginRight="40dp"
             app:endIconMode="password_toggle">
@@ -90,7 +90,7 @@
             android:id="@+id/btLogin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="170dp"
+            android:layout_marginLeft="160dp"
             android:layout_marginTop="10dp"
             android:background="@drawable/intro_background"
             android:gravity="center"
@@ -135,7 +135,7 @@
             android:id="@+id/btDangKy1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="140dp"
+            android:layout_marginLeft="130dp"
             android:layout_marginTop="10dp"
             android:background="@drawable/intro_background"
             android:gravity="center"

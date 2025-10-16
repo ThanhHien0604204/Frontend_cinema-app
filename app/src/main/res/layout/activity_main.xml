@@ -34,10 +34,11 @@
 
                     <ImageView
                         android:id="@+id/imageAccount"
-                        android:layout_width="60dp"
+                        android:layout_width="50dp"
                         android:layout_height="40dp"
-                        android:src="@drawable/ic_account"
                         android:layout_marginTop="20dp"
+                        android:layout_marginLeft="5dp"
+                        android:src="@drawable/ic_account"
                         app:itemIconSize="40dp"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -45,7 +46,7 @@
 
                     <EditText
                         android:id="@+id/editText"
-                        android:layout_width="320dp"
+                        android:layout_width="340dp"
                         android:layout_height="50dp"
                         android:layout_marginTop="40dp"
                         android:layout_marginBottom="16dp"
@@ -56,12 +57,12 @@
                         android:hint="Search Movies..."
                         android:imeOptions="actionSearch"
                         android:inputType="text"
-                        android:padding="10dp"
+                        android:padding="12dp"
+                        android:layout_marginRight="15dp"
                         android:textColorHint="@color/white"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.483"
-                        app:layout_constraintStart_toEndOf="@+id/imageAccount"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="1.0" />
 

@@ -80,13 +80,12 @@ public class ForgotPassword extends AppCompatActivity {
 
         ForgotPasswordRequest request = new ForgotPasswordRequest(email);
 
-        api.forgotPassword(request).enqueue(new Callback<String>() {
+        api.forgotPassword(request).enqueue(new Callback<Void>() {
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
+            public void onResponse(Call<Void> call, Response<Void> response) {
                 progressBar.setVisibility(View.GONE);
                 btnSendOtp.setEnabled(true);
                 if (response.isSuccessful()) {
-                    Toast.makeText(ForgotPassword.this, response.body(), Toast.LENGTH_LONG).show();
                     // Chuyển đến activity nhập OTP
                     Intent intent = new Intent(ForgotPassword.this, ResetPasswordActivity.class);
                     intent.putExtra("email", email);
@@ -97,7 +96,7 @@ public class ForgotPassword extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
+            public void onFailure(Call<Void> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 btnSendOtp.setEnabled(true);
                 Toast.makeText(ForgotPassword.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();

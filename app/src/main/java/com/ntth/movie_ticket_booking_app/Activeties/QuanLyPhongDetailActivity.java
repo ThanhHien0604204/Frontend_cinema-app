@@ -250,6 +250,7 @@ public class QuanLyPhongDetailActivity extends AppCompatActivity {
                 public void onResponse(Call<Room> call, Response<Room> response) {
                     if (response.isSuccessful()) {
                         Toast.makeText(QuanLyPhongDetailActivity.this, "Sửa phòng thành công", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
                         finish();
                     } else {
                         Toast.makeText(QuanLyPhongDetailActivity.this, "Lỗi sửa phòng: " + response.message(), Toast.LENGTH_SHORT).show();

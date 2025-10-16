@@ -15,5 +15,9 @@ public class Genre {
 
     public String getName() { return name != null ? name : "Unknown"; }
     public void setName(String name) { this.name = name; }
+    @Override
+    public String toString() {
+        return this.getName();
+    }
 }
 

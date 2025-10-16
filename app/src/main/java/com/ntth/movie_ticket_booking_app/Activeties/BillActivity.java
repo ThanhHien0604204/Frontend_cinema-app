@@ -47,6 +47,7 @@ public class BillActivity extends AppCompatActivity {
     private ApiService apiService;
     private boolean fromPayment = false;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

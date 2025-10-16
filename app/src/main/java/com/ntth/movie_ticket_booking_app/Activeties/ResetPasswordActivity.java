@@ -131,7 +131,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
         if (token.isEmpty()) {
             tilToken.setError("Mã OTP không được để trống");
             return false;
-        } else if (token.length() < 10) {
+        } else if (token.length() < 6) {
             tilToken.setError("Mã OYP phải có ít nhất 6 ký tự");
             return false;
         } else {
@@ -194,13 +194,13 @@ public class ResetPasswordActivity extends AppCompatActivity {
 
         ResetPasswordRequest request = new ResetPasswordRequest(otp, newPassword, confirmPassword);
 
-        api.resetPassword(request).enqueue(new Callback<String>() {
+        api.resetPassword(request).enqueue(new Callback<Void>() {
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
+            public void onResponse(Call<Void> call, Response<Void> response) {
                 progressBar.setVisibility(View.GONE);
                 btnResetPassword.setEnabled(true);
                 if (response.isSuccessful()) {
-                    Toast.makeText(ResetPasswordActivity.this, response.body(), Toast.LENGTH_LONG).show();
+                    //Toast.makeText(ResetPasswordActivity.this, response.body(), Toast.LENGTH_LONG).show();
                     // Chuyển về login
                     Intent intent = new Intent(ResetPasswordActivity.this, LoginActivity.class);
                     startActivity(intent);
@@ -211,7 +211,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
+            public void onFailure(Call<Void> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 btnResetPassword.setEnabled(true);
                 Toast.makeText(ResetPasswordActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();

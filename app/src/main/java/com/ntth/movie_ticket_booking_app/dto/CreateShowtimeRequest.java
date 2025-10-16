@@ -6,10 +6,12 @@ public class CreateShowtimeRequest {
     public String movieId;
     public String roomId;
     public String sessionName; // Thêm field bắt buộc
-    public List<Integer> date; // Thay LocalDate bằng List<Integer> [year, month, day]
-    public double startAt;     // Thay String bằng double (timestamp giây)
-    public double endAt;       // Thay String bằng double (timestamp giây)
+    private String date;        // "yyyy-MM-dd"
+    private String startTime;   // "HH:mm"
+    private String endTime;
     public Long price;
+    private Integer totalSeats;      // nếu backend cần
+    private Integer availableSeats;
 
     // Constructors
     public CreateShowtimeRequest() {}
@@ -21,12 +23,47 @@ public class CreateShowtimeRequest {
     public void setRoomId(String roomId) { this.roomId = roomId; }
     public String getSessionName() { return sessionName; }
     public void setSessionName(String sessionName) { this.sessionName = sessionName; }
-    public List<Integer> getDate() { return date; }
-    public void setDate(List<Integer> date) { this.date = date; }
-    public double getStartAt() { return startAt; }
-    public void setStartAt(double startAt) { this.startAt = startAt; }
-    public double getEndAt() { return endAt; }
-    public void setEndAt(double endAt) { this.endAt = endAt; }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
     public Long getPrice() { return price; }
     public void setPrice(Long price) { this.price = price; }
+
+    public Integer getTotalSeats() {
+        return totalSeats;
+    }
+
+    public void setTotalSeats(Integer totalSeats) {
+        this.totalSeats = totalSeats;
+    }
+
+    public Integer getAvailableSeats() {
+        return availableSeats;
+    }
+
+    public void setAvailableSeats(Integer availableSeats) {
+        this.availableSeats = availableSeats;
+    }
 }

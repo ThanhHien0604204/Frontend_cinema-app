@@ -85,7 +85,6 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         // Lấy movieId nếu là sửa
         movieId = getIntent().getStringExtra("movieId");
         if (movieId != null) {
-            loadMovieDetails(movieId);
             btThemAdmin.setVisibility(View.GONE);
             btSuaAdmin.setVisibility(View.VISIBLE);
             btXoaAdmin.setVisibility(View.VISIBLE);
@@ -129,7 +128,9 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
 
         // Đánh dấu các thể loại đã chọn
         for (int i = 0; i < genreList.size(); i++) {
+            Log.d("GenreDebug", "Position " + i + ": ID=" + genreList.get(i).getId() + ", Name=" + genreList.get(i).getName());
             if (selectedGenreIds.contains(genreList.get(i).getId())) {
+                Log.d("GenreDebug", "Selected: " + genreList.get(i).getName());
                 listView.setItemChecked(i, true);
             }
         }
@@ -156,6 +157,7 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
                 .filter(genre -> selectedGenreIds.contains(genre.getId()))
                 .map(Genre::getName)
                 .collect(Collectors.joining(", "));
+        Log.d("SelectedGenres", "IDs: " + selectedGenreIds + ", Names: " + selectedGenres);
         autoCompleteGenres.setText(selectedGenres.isEmpty() ? "" : selectedGenres);
     }
     private void loadGenres() {
@@ -230,6 +232,16 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "Vui lòng chọn ít nhất một thể loại!", Toast.LENGTH_SHORT).show();
             return;
         }
+        // Kiểm tra và ánh xạ ID sang Genre hợp lệ
+        List<String> selectedGenreNames = genreList.stream()
+                .filter(genre -> selectedGenreIds.contains(genre.getId()))
+                .map(Genre::getName)
+                .collect(Collectors.toList());
+
+        if (selectedGenreNames.isEmpty()) {
+            Toast.makeText(this, "Một số thể loại không hợp lệ!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Integer duration;
         try {
@@ -252,7 +264,7 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         movieRequest.setTitle(title);
         movieRequest.setDurationMinutes(duration);
         movieRequest.setMovieDateStart(releaseDate);
-        movieRequest.setGenre(selectedGenreIds);
+        movieRequest.setGenre(selectedGenreNames);  // Sửa: gửi tên thay vì ID
         movieRequest.setImageUrl(imageUrl);
         movieRequest.setTrailerUrl(trailerUrl);
         movieRequest.setSummary(summary);
@@ -261,12 +273,14 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         movieRequest.setActors(null);
         movieRequest.setViews(null);
 
+        Log.d("MovieRequest", "Genre Names sent: " + selectedGenreNames);
         apiService.addMovie(movieRequest).enqueue(new Callback<Movie>() {
             @Override
             public void onResponse(Call<Movie> call, Response<Movie> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(QuanLyPhimDetailActivity.this, "Thêm phim thành công!", Toast.LENGTH_SHORT).show();
                     setResult(RESULT_OK);
+                    loadGenres(); // Cập nhật lại danh sách thể loại
                     finish();
                 } else {
                     try {
@@ -305,6 +319,16 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "Vui lòng chọn ít nhất một thể loại!", Toast.LENGTH_SHORT).show();
             return;
         }
+        // Kiểm tra và ánh xạ ID sang Genre hợp lệ
+        List<String> selectedGenreNames = genreList.stream()
+                .filter(genre -> selectedGenreIds.contains(genre.getId()))
+                .map(Genre::getName)
+                .collect(Collectors.toList());
+
+        if (selectedGenreNames.isEmpty()) {
+            Toast.makeText(this, "Một số thể loại không hợp lệ!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Integer updatedDuration;
         try {
@@ -327,7 +351,7 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         updatedMovieRequest.setTitle(updatedTitle);
         updatedMovieRequest.setDurationMinutes(updatedDuration);
         updatedMovieRequest.setMovieDateStart(updatedReleaseDate);
-        updatedMovieRequest.setGenre(selectedGenreIds);
+        updatedMovieRequest.setGenre(selectedGenreNames);  // Sửa: gửi tên thay vì ID
         updatedMovieRequest.setImageUrl(updatedImageUrl);
         updatedMovieRequest.setTrailerUrl(updatedTrailerUrl);
         updatedMovieRequest.setSummary(updatedSummary);
@@ -335,12 +359,14 @@ public class QuanLyPhimDetailActivity extends AppCompatActivity {
         updatedMovieRequest.setAuthor(null);
         updatedMovieRequest.setActors(null);
         updatedMovieRequest.setViews(null);
-
+        Log.d("MovieRequest", "Genre Names sent: " + selectedGenreNames);
+        Log.d("MovieRequest", "Title: " + updatedMovieRequest.getTitle() + ", Genre Names: " + selectedGenreNames);
         apiService.updateMovie(movieId, updatedMovieRequest).enqueue(new Callback<Movie>() {
             @Override
             public void onResponse(Call<Movie> call, Response<Movie> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(QuanLyPhimDetailActivity.this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
                     finish();
                 } else {
                     try {

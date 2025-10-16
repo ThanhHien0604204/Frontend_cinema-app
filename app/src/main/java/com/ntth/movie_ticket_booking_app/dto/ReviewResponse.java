@@ -1,58 +1,31 @@
 package com.ntth.movie_ticket_booking_app.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ReviewResponse {
-    public String id;
-    public String movieId;
-    public String userId;
-    public double rating;
-    public String content;
-    public String reviewTime; // ISO-8601, có thể map Instant -> String
+    @SerializedName("id")
+    private String id;
 
-    public String getId() {
-        return id;
-    }
+    @SerializedName("movieId")
+    private String movieId;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    @SerializedName("userId")
+    private String userId;
 
-    public String getMovieId() {
-        return movieId;
-    }
+    @SerializedName("rating")
+    private double rating; // Phải là double/float vì JSON là 5.0
 
-    public void setMovieId(String movieId) {
-        this.movieId = movieId;
-    }
+    @SerializedName("content")
+    private String content;
 
-    public String getUserId() {
-        return userId;
-    }
+    @SerializedName("reviewTime")
+    private String reviewTime; // Hoặc Date nếu là timestamp
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public double getRating() {
-        return rating;
-    }
-
-    public void setRating(double rating) {
-        this.rating = rating;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public String getReviewTime() {
-        return reviewTime;
-    }
-
-    public void setReviewTime(String reviewTime) {
-        this.reviewTime = reviewTime;
-    }
+    // Getter/setter cho tất cả fields
+    public String getId() { return id; }
+    public String getMovieId() { return movieId; }
+    public String getUserId() { return userId; }
+    public double getRating() { return rating; }
+    public String getContent() { return content; }
+    public String getReviewTime() { return reviewTime; }
 }

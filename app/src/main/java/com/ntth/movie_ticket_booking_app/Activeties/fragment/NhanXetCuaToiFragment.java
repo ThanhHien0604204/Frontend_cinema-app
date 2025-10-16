@@ -80,7 +80,7 @@ public class NhanXetCuaToiFragment extends Fragment {
         // Thiết lập RecyclerView
         recyclerView = view.findViewById(R.id.recyclerView_NhanXet);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        reviewAdapter = new ReviewAdapter(getContext(), listReview);
+        reviewAdapter = new ReviewAdapter(getContext(), listReview,true);
         recyclerView.setAdapter(reviewAdapter);
 
         fetchReviewsFromApi();

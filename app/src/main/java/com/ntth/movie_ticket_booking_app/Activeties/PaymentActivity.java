@@ -568,6 +568,7 @@ public class PaymentActivity extends AppCompatActivity {
             public void onResponse(Call<HoldSeatsResponse> call, Response<HoldSeatsResponse> res) {
                 if (!res.isSuccessful() || res.body() == null) {
                     Toast.makeText(PaymentActivity.this, "Giữ ghế thất bại: " + res.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(PaymentActivity.this, "Vui lòng đăng nhập!", Toast.LENGTH_SHORT).show();
                     finish();
                     return;
                 }
@@ -596,6 +597,7 @@ public class PaymentActivity extends AppCompatActivity {
     // ================== PAY CASH ==================
     private void payCash() {
         if (holdId == null) {
+            // Kiểm tra hold ghế còn hiệu lực
             showError("HoldId không tồn tại. Vui lòng chọn ghế lại.");
             Intent intent = new Intent(PaymentActivity.this, SeatPickerActivity.class);
             intent.putExtra("showtimeId", showtimeId);
@@ -603,7 +605,7 @@ public class PaymentActivity extends AppCompatActivity {
             finish();
             return;
         }
-
+        // Tạo request với paymentMethod CASH
         Map<String, String> body = new HashMap<>();
         body.put("holdId", holdId);
         body.put("paymentMethod", "CASH");
@@ -631,7 +633,8 @@ public class PaymentActivity extends AppCompatActivity {
                 Toast.makeText(PaymentActivity.this, "Đặt vé thành công (thanh toán tại quầy): " + b.getBookingCode(), Toast.LENGTH_LONG).show();
 
                 Intent i = new Intent(PaymentActivity.this, BillActivity.class);
-                i.putExtra("bookingId", b.getBookingId());
+                i.putExtra(BillActivity.EXTRA_BOOKING_ID, b.getBookingId());
+                i.putExtra("from_payment", true); // Để xử lý back navigation
                 i.putExtra("showtimeId", savedShowtimeId);
                 i.putStringArrayListExtra("seats", savedSeats);
                 startActivity(i);
